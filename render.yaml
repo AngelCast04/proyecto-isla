@@ -6,7 +6,7 @@
 
 services:
   - type: web
-    name: project-isla
+    name: prueba_redes_semanticas
     runtime: python
     plan: free
     region: oregon

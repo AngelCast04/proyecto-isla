@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redes Semánticas para los Derechos Humanos</title>
+  <title> Derechos Humanos</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,9 +11,10 @@
       font-family: 'Segoe UI', system-ui, sans-serif;
       background: #0f0f12;
       color: #e4e4e7;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     /* Header */
@@ -31,6 +32,29 @@
       font-size: 1.1rem;
       font-weight: 600;
       color: #e4e4e7;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.375rem;
+      color: #e4e4e7;
+      opacity: 0.85;
+      text-decoration: none;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .home-link:hover {
+      background: #27272a;
+      opacity: 1;
+    }
+    .home-link svg {
+      width: 1.125rem;
+      height: 1.125rem;
     }
     .header-actions {
       display: flex;
@@ -79,26 +103,37 @@
     .btn-primary:hover { background: #4f46e5; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* Leyenda sobre el grafo — centrada y más grande */
+    /* Leyenda sobre el grafo — fila izquierda */
     .leyenda-bar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem 1.5rem;
+      flex-wrap: nowrap;
       align-items: center;
-      justify-content: center;
-      padding: 0.75rem 1.5rem;
+      justify-content: flex-start;
+      gap: 0.55rem 0.85rem;
+      padding: 0.6rem 1rem;
       background: #18181b;
-      border-bottom: 1px solid #27272a;
-      font-size: 1.1rem;
+      font-size: 0.95rem;
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #3f3f46 transparent;
+    }
+    .leyenda-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .leyenda-bar::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+      border-radius: 4px;
     }
     .leyenda-bar .item {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.45rem;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .leyenda-bar .dot {
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       border-radius: 50%;
       border: 2px solid rgba(255,255,255,0.4);
       flex-shrink: 0;
@@ -106,25 +141,210 @@
     .leyenda-bar .dot.hex { border-radius: 0; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
     .leyenda-bar .item.filtro {
       cursor: pointer;
-      padding: 0.25rem 0.5rem;
+      padding: 0.28rem 0.55rem;
       border-radius: 0.375rem;
       transition: background 0.15s;
     }
     .leyenda-bar .item.filtro:hover { background: #27272a; }
     .leyenda-bar .item.filtro.activo { background: #3f3f46; outline: 1px solid #6366f1; }
+    .leyenda-bar .btn-guia {
+      flex-shrink: 0;
+      margin-right: 0.65rem;
+      font-size: 0.82rem;
+      padding: 0.3rem 0.75rem;
+    }
 
-    /* Área del grafo: contenedor principal */
-    .grafo-wrap {
+    .leyenda-wrap {
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+    }
+    .btn-guia {
+      background: transparent;
+      border: 1px dashed #52525b;
+      color: #a1a1aa;
+      font-size: 0.8rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .btn-guia:hover {
+      color: #e4e4e7;
+      border-color: #6366f1;
+      background: #27272a;
+    }
+    .btn-guia.activo {
+      color: #c4b5fd;
+      border-color: #6366f1;
+      border-style: solid;
+      background: rgba(99, 102, 241, 0.12);
+    }
+    .leyenda-guia {
+      padding: 0 1.25rem 1rem;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.25s ease;
+    }
+    .leyenda-guia.abierta {
+      max-height: 520px;
+      opacity: 1;
+      overflow-y: auto;
+    }
+
+    .listado-derechos {
+      padding: 0 1rem 0.85rem;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.35s ease, opacity 0.25s ease;
+      border-top: 1px solid transparent;
+    }
+    .listado-derechos.abierto {
+      max-height: 42vh;
+      opacity: 1;
+      overflow-y: auto;
+      border-top-color: #27272a;
+      padding-top: 0.75rem;
+    }
+    .listado-intro {
+      font-size: 0.8rem;
+      color: #a1a1aa;
+      line-height: 1.45;
+      margin: 0 0 0.75rem;
+      max-width: 900px;
+    }
+    .listado-columnas {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.65rem;
+    }
+    .listado-col {
+      background: #1f1f23;
+      border: 1px solid #3f3f46;
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    .listado-col-head {
+      padding: 0.4rem 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #0f0f12;
+    }
+    .listado-col-head.poblaciones { background: #a1a1aa; }
+    .listado-col-head.sociales { background: #22c55e; }
+    .listado-col-head.libertades { background: #3b82f6; }
+    .listado-col-head.igualdad { background: #eab308; color: #18181b; }
+    .listado-col-head.justicia { background: #8b5cf6; color: #fff; }
+    .listado-col-head.integridad { background: #ef4444; color: #fff; }
+    .listado-col-head.prohibiciones { background: #ec4899; color: #fff; }
+    .listado-col ul {
+      list-style: none;
+      margin: 0;
+      padding: 0.35rem;
+    }
+    .listado-col li button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: #e4e4e7;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      padding: 0.35rem 0.45rem;
+      border-radius: 0.3rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .listado-col li button:hover {
+      background: #27272a;
+      color: #fff;
+    }
+    .listado-col li button.activo {
+      background: rgba(99, 102, 241, 0.22);
+      outline: 1px solid #6366f1;
+      color: #c4b5fd;
+    }
+    .leyenda-guia-intro {
+      text-align: center;
+      font-size: 0.82rem;
+      color: #a1a1aa;
+      line-height: 1.45;
+      max-width: 720px;
+      margin: 0 auto 0.85rem;
+    }
+    .leyenda-guia-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.65rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .guia-card {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 0.5rem;
+      padding: 0.65rem 0.75rem;
+    }
+    .guia-card-head {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+    .guia-card-head .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.35);
+      flex-shrink: 0;
+    }
+    .guia-card-head .dot.hex {
+      border-radius: 0;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    }
+    .guia-card-head strong {
+      font-size: 0.88rem;
+      color: #f4f4f5;
+    }
+    .guia-card p {
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #d4d4d8;
+      margin: 0;
+    }
+    .guia-card .ejemplo {
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      color: #71717a;
+      font-style: italic;
+    }
+
+    /* Contenedor principal: grafo | paneles */
+    .main-split {
       flex: 1;
-      min-height: 58vh;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Área del grafo: columna izquierda */
+    .grafo-wrap {
+      flex: 1.2;
+      min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      border-right: 1px solid #27272a;
     }
     /* Mismo ancho y alto para degradado y lienzo del grafo */
     .grafo-lienzo {
       flex: 1;
-      min-height: 480px;
+      min-height: 0;
       position: relative;
       width: 100%;
     }
@@ -162,29 +382,44 @@
     }
     .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
 
-    /* 4 paneles inferiores */
+    /* Panel lateral: explicaciones y datos */
     .paneles {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0;
-      border-top: 1px solid #27272a;
-      max-height: 280px;
-      overflow: hidden;
-    }
-    @media (max-width: 1100px) {
-      .paneles { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 600px) {
-      .paneles { grid-template-columns: 1fr; max-height: none; }
-    }
-    .panel {
-      background: #18181b;
-      border-right: 1px solid #27272a;
+      flex: 0.85;
+      min-width: 300px;
+      max-width: 420px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      background: #18181b;
     }
-    .panel:last-child { border-right: none; }
+    @media (max-width: 900px) {
+      .main-split {
+        flex-direction: column;
+        overflow: auto;
+      }
+      .grafo-wrap {
+        flex: none;
+        min-height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid #27272a;
+      }
+      .paneles {
+        flex: 1;
+        min-width: 0;
+        max-width: none;
+        min-height: 40vh;
+      }
+    }
+    .panel {
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .panel:last-child { border-bottom: none; }
     .panel h3 {
       padding: 0.6rem 1rem;
       font-size: 0.75rem;
@@ -225,16 +460,26 @@
     .error { color: #ef4444; }
 
     @media print {
-      .header-buttons, .leyenda-bar .item, .grafo-meta, .btn { display: none !important; }
+      body { height: auto; overflow: visible; }
+      .header-buttons, .leyenda-bar .item, .leyenda-guia, .listado-derechos, .grafo-meta, .btn { display: none !important; }
       .header-actions input { border: 1px solid #ccc; }
+      .main-split { flex-direction: column; }
+      .grafo-wrap { min-height: 60vh; border-right: none; }
+      .paneles { max-width: none; }
       .grafo-bg { opacity: 0.5; }
-      .paneles { max-height: none; }
     }
   </style>
 </head>
 <body>
   <header class="header">
-    <h1>Redes Semánticas para los Derechos Humanos</h1>
+    <h1>
+      <a href="/" class="home-link" title="Volver al inicio" aria-label="Volver al inicio">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 10.5L12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9V20.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <span>Asistente IA de Derechos Humanos</span>
+    </h1>
     <div class="header-actions">
       <input type="text" id="queryInput" placeholder="Escribe tu consulta y pulsa Enter o Consultar"
         onkeydown="if(event.key==='Enter')consultar()">
@@ -246,27 +491,101 @@
     </div>
   </header>
 
+  <div class="leyenda-wrap">
   <div class="leyenda-bar" id="leyenda">
-    <div class="item filtro" data-tipo="Derecho" title="Ver solo nodos de este tipo"><span class="dot hex" style="background:#3b82f6"></span><span>Derecho</span></div>
-    <div class="item filtro" data-tipo="Tratado" title="Ver solo nodos de este tipo"><span class="dot hex" style="background:#8b5cf6"></span><span>Tratado</span></div>
-    <div class="item filtro" data-tipo="Población" title="Ver solo nodos de este tipo"><span class="dot" style="background:#22c55e"></span><span>Población</span></div>
-    <div class="item filtro" data-tipo="Resolución" title="Ver solo nodos de este tipo"><span class="dot" style="background:#ec4899"></span><span>Resolución</span></div>
-    <div class="item filtro" data-tipo="Organismo" title="Ver solo nodos de este tipo"><span class="dot" style="background:#f59e0b"></span><span>Organismo</span></div>
-    <div class="item filtro" data-tipo="Mecanismo" title="Ver solo nodos de este tipo"><span class="dot" style="background:#06b6d4"></span><span>Mecanismo</span></div>
-    <div class="item filtro" data-tipo="Concepto_Jurídico" title="Ver solo nodos de este tipo"><span class="dot" style="background:#84cc16"></span><span>Concepto jurídico</span></div>
-    <div class="item filtro" data-tipo="País" title="Ver solo nodos de este tipo"><span class="dot" style="background:#ef4444"></span><span>País</span></div>
-    <div class="item filtro" data-tipo="Órgano" title="Ver solo nodos de este tipo"><span class="dot" style="background:#6366f1"></span><span>Órgano</span></div>
-    <div class="item filtro" data-tipo="Otro" title="Ver solo nodos de este tipo"><span class="dot" style="background:#71717a"></span><span>Otro</span></div>
-    <div class="item filtro activo" data-tipo="todos" title="Mostrar todos los nodos"><span>mostrar todos</span></div>
+    <button type="button" class="btn-guia" id="btnToggleListado" aria-expanded="false" aria-controls="listadoDerechos">
+      Listado de derechos
+    </button>
+    <button type="button" class="btn-guia" id="btnToggleGuia" aria-expanded="false" aria-controls="leyendaGuia">
+      ¿Qué significa cada categoría?
+    </button>
+    <div class="item filtro" data-tipo="Derecho" title="Filtrar: ver solo derechos en el grafo"><span class="dot hex" style="background:#3b82f6"></span><span>Derecho</span></div>
+    <div class="item filtro" data-tipo="Tratado" title="Filtrar: ver solo tratados e instrumentos"><span class="dot hex" style="background:#8b5cf6"></span><span>Tratado</span></div>
+    <div class="item filtro" data-tipo="Población" title="Filtrar: ver solo poblaciones protegidas"><span class="dot" style="background:#22c55e"></span><span>Población</span></div>
+    <div class="item filtro" data-tipo="Resolución" title="Filtrar: ver solo resoluciones y decisiones"><span class="dot" style="background:#ec4899"></span><span>Resolución</span></div>
+    <div class="item filtro" data-tipo="Organismo" title="Filtrar: ver solo organismos internacionales"><span class="dot" style="background:#f59e0b"></span><span>Organismo</span></div>
+    <div class="item filtro" data-tipo="Mecanismo" title="Filtrar: ver solo mecanismos de protección"><span class="dot" style="background:#06b6d4"></span><span>Mecanismo</span></div>
+    <div class="item filtro" data-tipo="Concepto_Jurídico" title="Filtrar: ver solo conceptos jurídicos"><span class="dot" style="background:#84cc16"></span><span>Concepto</span></div>
+    <div class="item filtro" data-tipo="País" title="Filtrar: ver solo países"><span class="dot" style="background:#ef4444"></span><span>País</span></div>
+    <div class="item filtro" data-tipo="Órgano" title="Filtrar: ver solo órganos internos"><span class="dot" style="background:#6366f1"></span><span>Órgano</span></div>
+    <div class="item filtro" data-tipo="Otro" title="Filtrar: otros elementos"><span class="dot" style="background:#71717a"></span><span>Otro</span></div>
+    <div class="item filtro activo" data-tipo="todos" title="Quitar filtros y mostrar toda la red"><span>Mostrar todos</span></div>
+  </div>
+  <div class="leyenda-guia" id="leyendaGuia" aria-hidden="true">
+    <p class="leyenda-guia-intro">
+      Cada color representa un <strong>tipo de elemento</strong> extraído de los documentos de derechos humanos.
+      Haz clic en una etiqueta de arriba para ver solo ese tipo en el grafo; «mostrar todos» restaura la vista completa.
+    </p>
+    <div class="leyenda-guia-grid">
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot hex" style="background:#3b82f6"></span><strong>Derecho</strong></div>
+        <p>Libertades y garantías que toda persona debería tener: educación, salud, no ser discriminado, etc.</p>
+        <p class="ejemplo">Ej.: derecho a la igualdad, derecho al trabajo.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot hex" style="background:#8b5cf6"></span><strong>Tratado</strong></div>
+        <p>Acuerdos internacionales que los países firman y que crean obligaciones legales sobre derechos humanos.</p>
+        <p class="ejemplo">Ej.: Convención sobre los Derechos del Niño, Pacto de Derechos Civiles.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#22c55e"></span><strong>Población</strong></div>
+        <p>Grupos de personas especialmente mencionados o protegidos en los textos.</p>
+        <p class="ejemplo">Ej.: niños, mujeres, personas indígenas, migrantes, personas con discapacidad.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#ec4899"></span><strong>Resolución</strong></div>
+        <p>Decisiones, observaciones o pronunciamientos oficiales de comités y organismos sobre un tema o caso.</p>
+        <p class="ejemplo">Ej.: observaciones generales, recomendaciones a un Estado.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#f59e0b"></span><strong>Organismo</strong></div>
+        <p>Instituciones que supervisan, interpretan o hacen cumplir los derechos humanos a nivel internacional o regional.</p>
+        <p class="ejemplo">Ej.: Comité de Derechos Humanos, Corte Interamericana, ACNUDH.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#06b6d4"></span><strong>Mecanismo</strong></div>
+        <p>Procedimientos concretos para denunciar violaciones, investigar casos o proteger a las personas.</p>
+        <p class="ejemplo">Ej.: relatoría especial, examen periódico universal, peticiones individuales.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#84cc16"></span><strong>Concepto jurídico</strong></div>
+        <p>Ideas o principios legales que se repiten en los documentos y ayudan a interpretar las normas.</p>
+        <p class="ejemplo">Ej.: debido proceso, dignidad humana, no discriminación.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#ef4444"></span><strong>País</strong></div>
+        <p>Estados mencionados como responsables de cumplir tratados o como parte de un caso concreto.</p>
+        <p class="ejemplo">Ej.: México, Colombia, España.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#6366f1"></span><strong>Órgano</strong></div>
+        <p>Partes internas de una organización: comisiones, salas, secretarías o unidades especializadas.</p>
+        <p class="ejemplo">Ej.: Sala de Casación, Secretaría de la Corte, Subcomisión.</p>
+      </article>
+      <article class="guia-card">
+        <div class="guia-card-head"><span class="dot" style="background:#71717a"></span><strong>Otro</strong></div>
+        <p>Elementos que no encajan claramente en las categorías anteriores pero aparecen en la red.</p>
+        <p class="ejemplo">Se usa cuando el tipo no pudo clasificarse con precisión.</p>
+      </article>
+    </div>
   </div>
 
+  <div class="listado-derechos" id="listadoDerechos" aria-hidden="true">
+    <p class="listado-intro">
+      Elige un derecho del listado estructurado. Se consulta la red semántica y se muestra el <strong>grafo impactado</strong> (entidades, tratados, organismos y relaciones vinculadas a ese tema).
+    </p>
+    <div class="listado-columnas" id="listadoColumnas"></div>
+  </div>
+  </div>
+
+  <div class="main-split">
   <div class="grafo-wrap">
     <div class="grafo-lienzo">
       <div class="grafo-bg" aria-hidden="true"></div>
       <div id="mynetwork"></div>
     </div>
     <div class="grafo-meta">
-      <span id="grafoInfo">Realiza una consulta para ver la red de conocimiento.</span>
+      <span id="grafoInfo">Realiza una consulta o pulsa «Ver red completa».</span>
       <button type="button" class="btn btn-secondary btn-sm" onclick="centrarGrafo()">Centrar</button>
       <button type="button" class="btn btn-secondary btn-sm" onclick="verGrafoCompleto()">Ver red completa</button>
     </div>
@@ -290,6 +609,7 @@
       <div class="panel-content vacio" id="panelRelaciones">—</div>
     </div>
   </section>
+  </div>
 
   <script src="config.js"></script>
   <script>
@@ -298,9 +618,77 @@
     let fullRawNodes = [];
     let fullRawEdges = [];
     let filtroActivo = 'todos';
+    let layoutToken = 0;
+    let floatResumeTimer = null;
+    let floatEnabled = false;
     const API = (typeof window.__API_BASE__ === 'string'
       ? String(window.__API_BASE__).replace(/\/$/, '')
       : '');
+
+    const NETWORK_OPTIONS = {
+      nodes: {
+        size: 24,
+        font: { size: 14 },
+        borderWidth: 2.5,
+        borderWidthSelected: 3
+      },
+      edges: {
+        width: 1.5,
+        smooth: { type: 'continuous' },
+        selectionWidth: 2
+      },
+      physics: {
+        enabled: false,
+        forceAtlas2Based: {
+          gravitationalConstant: -45,
+          centralGravity: 0.005,
+          springLength: 110,
+          springConstant: 0.04,
+          avoidOverlap: 0.85,
+          damping: 0.6
+        },
+        solver: 'forceAtlas2Based',
+        stabilization: {
+          enabled: true,
+          iterations: 150,
+          updateInterval: 25,
+          fit: true
+        },
+        maxVelocity: 50,
+        minVelocity: 0.75
+      },
+      interaction: {
+        hover: true,
+        tooltipDelay: 200,
+        selectConnectedEdges: true,
+        multiselect: true,
+        zoomView: true,
+        dragView: true,
+        dragNodes: true,
+        hideEdgesOnDrag: false,
+        keyboard: { enabled: false }
+      }
+    };
+
+    const PHYSICS_FLOAT = {
+      enabled: true,
+      forceAtlas2Based: {
+        gravitationalConstant: -16,
+        centralGravity: 0.0008,
+        springLength: 135,
+        springConstant: 0.012,
+        avoidOverlap: 0.15,
+        damping: 0.94
+      },
+      solver: 'forceAtlas2Based',
+      stabilization: { enabled: false },
+      maxVelocity: 6,
+      minVelocity: 0.04,
+      timestep: 0.35
+    };
+
+    const FLOAT_MAX_NODES = 800;
+    const FLOAT_RESUME_MS = 2800;
 
     const coloresPorTipo = {
       Población: '#22c55e', POBLACIÓN: '#22c55e', poblacion: '#22c55e',
@@ -357,7 +745,14 @@
             },
             borderWidth: 2.5,
             shape: usaFormaPentagono(n.group) ? 'hexagon' : 'dot',
-            font: { size: 14, color: '#e4e4e7' }
+            font: { size: 14, color: '#e4e4e7' },
+            shadow: {
+              enabled: true,
+              color: 'rgba(0,0,0,0.45)',
+              size: 14,
+              x: 2,
+              y: 6
+            }
           };
           if (pos[n.id]) { obj.x = pos[n.id].x; obj.y = pos[n.id].y; }
           return obj;
@@ -376,56 +771,132 @@
       return { nodes, edges };
     }
 
-    function dibujar(nds, eds) {
+    function desactivarFisica() {
+      if (!network) return;
+      floatEnabled = false;
+      clearTimeout(floatResumeTimer);
+      network.stopSimulation();
+      network.setOptions({ physics: { enabled: false } });
+    }
+
+    function puedeFlotar(nodeCount) {
+      return nodeCount > 0 && nodeCount <= FLOAT_MAX_NODES;
+    }
+
+    function activarFlotacion(nodeCount) {
+      if (!network || !puedeFlotar(nodeCount)) {
+        desactivarFisica();
+        return;
+      }
+      floatEnabled = true;
+      network.setOptions({ physics: PHYSICS_FLOAT });
+    }
+
+    function pausarFlotacionPorInteraccion() {
+      if (!network || !floatEnabled) return;
+      network.stopSimulation();
+      network.setOptions({ physics: { enabled: false } });
+      clearTimeout(floatResumeTimer);
+      floatResumeTimer = setTimeout(function() {
+        if (!network || !floatEnabled || data.nodes.length === 0) return;
+        if (!puedeFlotar(data.nodes.length)) return;
+        network.setOptions({ physics: PHYSICS_FLOAT });
+      }, FLOAT_RESUME_MS);
+    }
+
+    function iteracionesEstabilizacion(nodeCount) {
+      if (nodeCount <= 40) return 120;
+      if (nodeCount <= 150) return 100;
+      if (nodeCount <= 500) return 80;
+      if (nodeCount <= 1200) return 50;
+      return 35;
+    }
+
+    function ajustarVista(animated) {
+      if (!network || data.nodes.length === 0) return;
+      network.fit({
+        animation: animated === false
+          ? false
+          : { duration: 280, easingFunction: 'easeInOutQuad' },
+        padding: 48
+      });
+    }
+
+    function ejecutarLayout(nodeCount, animatedView) {
+      if (!network || nodeCount === 0) return;
+
+      const token = ++layoutToken;
+      const iterations = iteracionesEstabilizacion(nodeCount);
+
+      network.setOptions({
+        physics: {
+          enabled: true,
+          stabilization: { enabled: true, iterations: iterations, fit: false }
+        }
+      });
+
+      const onDone = function() {
+        if (token !== layoutToken) return;
+        network.stopSimulation();
+        ajustarVista(animatedView);
+        activarFlotacion(nodeCount);
+      };
+
+      network.once('stabilized', onDone);
+      network.stabilize(iterations);
+
+      setTimeout(function() {
+        if (token !== layoutToken) return;
+        network.stopSimulation();
+        ajustarVista(false);
+        activarFlotacion(nodeCount);
+      }, Math.min(12000, 80 + iterations * 40));
+    }
+
+    function crearNetwork() {
+      const container = document.getElementById('mynetwork');
+      network = new vis.Network(container, data, NETWORK_OPTIONS);
+
+      network.on('dragStart', pausarFlotacionPorInteraccion);
+      network.on('dragEnd', pausarFlotacionPorInteraccion);
+      network.on('zoom', pausarFlotacionPorInteraccion);
+      network.on('hoverNode', pausarFlotacionPorInteraccion);
+      network.on('blurNode', pausarFlotacionPorInteraccion);
+      network.on('click', function(params) {
+        pausarFlotacionPorInteraccion();
+        if (params.nodes.length === 0) {
+          network.unselectAll();
+        }
+      });
+    }
+
+    function dibujar(nds, eds, opts) {
+      opts = opts || {};
+      const nodeCount = (nds && nds.length) || 0;
+      const preserveView = !!opts.preserveView;
+
       data.nodes.clear();
       data.edges.clear();
       if (nds && nds.length) data.nodes.add(nds);
       if (eds && eds.length) data.edges.add(eds);
 
-      if (network && nds && nds.length > 0) {
-        network.setOptions({ physics: { enabled: true } });
+      if (!network) crearNetwork();
+
+      layoutToken++;
+      desactivarFisica();
+
+      if (nodeCount === 0) return;
+
+      if (preserveView) {
+        activarFlotacion(nodeCount);
+        return;
       }
 
-      const container = document.getElementById('mynetwork');
-      if (!network) {
-        network = new vis.Network(container, data, {
-          nodes: { size: 24, font: { size: 14 } },
-          edges: { width: 1.5, smooth: { type: 'continuous' } },
-          physics: {
-            enabled: true,
-            forceAtlas2Based: {
-              gravitationalConstant: -80,
-              centralGravity: 0.01,
-              springLength: 120,
-              springConstant: 0.08,
-              avoidOverlap: 0.5
-            },
-            solver: 'forceAtlas2Based',
-            stabilization: { iterations: 150 }
-          },
-          interaction: { hover: true, tooltipDelay: 200 }
-        });
-        network.on('stabilizationIterationsDone', function() {
-          network.setOptions({ physics: { enabled: false } });
-        });
-      }
-      setTimeout(() => {
-        if (!network) return;
-        network.fit({ animation: { duration: 250 } });
-        if (nds && nds.length > 0) {
-          const scale = network.getScale();
-          network.moveTo({ scale: scale * 2.2, animation: { duration: 250 } });
-        }
-      }, 400);
+      ejecutarLayout(nodeCount, opts.animatedView !== false);
     }
 
     function centrarGrafo() {
-      if (!network) return;
-      network.fit({ animation: { duration: 300 } });
-      if (data.nodes.length > 0) {
-        const scale = network.getScale();
-        network.moveTo({ scale: scale * 2.2, animation: { duration: 250 } });
-      }
+      ajustarVista(true);
     }
 
     function aplicarFiltro(tipo) {
@@ -455,23 +926,187 @@
       }
       var posiciones = network.getPositions();
       var prepared = prepararDatos({ nodes: nodes, edges: edges }, posiciones);
-      data.nodes.clear();
-      data.edges.clear();
-      if (nodes.length) data.nodes.add(prepared.nodes.get());
-      if (edges.length) data.edges.add(prepared.edges.get());
-      setTimeout(function() {
-        network.fit({ animation: { duration: 200 } });
-        if (nodes.length > 0) {
-          var scale = network.getScale();
-          network.moveTo({ scale: scale * 2.2, animation: { duration: 200 } });
-        }
-      }, 50);
+      dibujar(
+        prepared.nodes.get().map(function(n) { return Object.assign({}, n); }),
+        prepared.edges.get().map(function(e) { return Object.assign({}, e); }),
+        { preserveView: true, animatedView: false }
+      );
     }
 
     document.getElementById('leyenda').addEventListener('click', function(e) {
       var item = e.target.closest('.item.filtro');
       if (item) aplicarFiltro(item.getAttribute('data-tipo'));
     });
+
+    (function initGuiaLeyenda() {
+      var btn = document.getElementById('btnToggleGuia');
+      var panel = document.getElementById('leyendaGuia');
+      if (!btn || !panel) return;
+      btn.addEventListener('click', function() {
+        var abierta = panel.classList.toggle('abierta');
+        btn.classList.toggle('activo', abierta);
+        btn.setAttribute('aria-expanded', abierta ? 'true' : 'false');
+        panel.setAttribute('aria-hidden', abierta ? 'false' : 'true');
+        btn.textContent = abierta ? 'Ocultar guía de categorías' : '¿Qué significa cada categoría?';
+      });
+    })();
+
+    const LISTADO_ESTRUCTURADO = [
+      {
+        id: 'poblaciones',
+        titulo: 'Poblaciones protegidas',
+        clase: 'poblaciones',
+        items: [
+          'Derecho de los Indígenas',
+          'Derecho de Migrantes',
+          'Derecho de los Adultos mayores',
+          'Derechos de los Refugiados',
+          'Derechos de los Niños',
+          'Derecho de las Mujeres',
+          'Derechos de los Reclusos',
+          'Derechos de las Personas con Discapacitadas'
+        ]
+      },
+      {
+        id: 'sociales',
+        titulo: 'Derechos sociales y económicos',
+        clase: 'sociales',
+        items: [
+          'Derecho a la Vivienda',
+          'Derecho a la Educación',
+          'Derecho a la Salud',
+          'Derecho humano al Agua',
+          'Derecho al Descanso',
+          'Derecho al Trabajo',
+          'Derecho a la Alimentación',
+          'Derecho al Desarrollo',
+          'Derecho de Propiedad y Pensiones'
+        ]
+      },
+      {
+        id: 'libertades',
+        titulo: 'Libertades',
+        clase: 'libertades',
+        items: [
+          'Derechos de la Libertad',
+          'Libertad de Cultos',
+          'Libertad de Movilidad',
+          'Libertad Personal',
+          'Derecho a la Libertad de Expresión',
+          'Derecho de Asociación',
+          'Derecho a la Familia',
+          'Derecho a la Privacidad',
+          'Derecho a la Dignidad',
+          'Derechos Lingüísticos',
+          'Derecho al Medio Ambiente',
+          'Derecho a la Paz',
+          'Derecho a ser Diferente'
+        ]
+      },
+      {
+        id: 'igualdad',
+        titulo: 'Igualdad y no discriminación',
+        clase: 'igualdad',
+        items: [
+          'Derecho a la Igualdad',
+          'Derecho a la No Discriminación'
+        ]
+      },
+      {
+        id: 'justicia',
+        titulo: 'Justicia y proceso',
+        clase: 'justicia',
+        items: [
+          'Derecho al debido Proceso',
+          'Derecho al Acceso a la Justicia',
+          'Derecho a la Legalidad',
+          'Derecho de Petición'
+        ]
+      },
+      {
+        id: 'integridad',
+        titulo: 'Vida e integridad',
+        clase: 'integridad',
+        items: [
+          'Derecho a la Vida',
+          'Protección contra la Tortura'
+        ]
+      },
+      {
+        id: 'prohibiciones',
+        titulo: 'Prohibiciones',
+        clase: 'prohibiciones',
+        items: [
+          'Prohibición a la Trata de Personas',
+          'Prohibición de Ejecución Sumaria',
+          'Prohibición a la Desaparición Forzada'
+        ]
+      }
+    ];
+
+    function consultaParaDerecho(nombre) {
+      return (
+        'Explica el marco del «' + nombre + '» según los documentos: ' +
+        'poblaciones protegidas, derechos asociados, obligaciones del Estado, ' +
+        'principios, instrumentos internacionales y relaciones relevantes en el grafo.'
+      );
+    }
+
+    function marcarDerechoActivo(nombre) {
+      document.querySelectorAll('.listado-col li button').forEach(function(btn) {
+        btn.classList.toggle('activo', btn.getAttribute('data-derecho') === nombre);
+      });
+    }
+
+    function consultarDerecho(nombre) {
+      if (!nombre) return;
+      marcarDerechoActivo(nombre);
+      var input = document.getElementById('queryInput');
+      if (input) input.value = consultaParaDerecho(nombre);
+      var info = document.getElementById('grafoInfo');
+      if (info) info.textContent = 'Mapa conceptual: ' + nombre;
+      consultar();
+    }
+
+    (function initListadoDerechos() {
+      var btn = document.getElementById('btnToggleListado');
+      var panel = document.getElementById('listadoDerechos');
+      var columnas = document.getElementById('listadoColumnas');
+      if (!btn || !panel || !columnas) return;
+
+      LISTADO_ESTRUCTURADO.forEach(function(col) {
+        var article = document.createElement('article');
+        article.className = 'listado-col';
+        var head = document.createElement('div');
+        head.className = 'listado-col-head ' + col.clase;
+        head.textContent = col.titulo;
+        article.appendChild(head);
+        var ul = document.createElement('ul');
+        col.items.forEach(function(nombre) {
+          var li = document.createElement('li');
+          var itemBtn = document.createElement('button');
+          itemBtn.type = 'button';
+          itemBtn.setAttribute('data-derecho', nombre);
+          itemBtn.textContent = nombre;
+          itemBtn.title = 'Consultar grafo de «' + nombre + '»';
+          itemBtn.addEventListener('click', function() {
+            consultarDerecho(nombre);
+          });
+          li.appendChild(itemBtn);
+          ul.appendChild(li);
+        });
+        article.appendChild(ul);
+        columnas.appendChild(article);
+      });
+
+      btn.addEventListener('click', function() {
+        var abierto = panel.classList.toggle('abierto');
+        btn.classList.toggle('activo', abierto);
+        btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+        panel.setAttribute('aria-hidden', abierto ? 'false' : 'true');
+        btn.textContent = abierto ? 'Ocultar listado' : 'Listado de derechos';
+      });
+    })();
 
     function esc(s) {
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
@@ -535,7 +1170,7 @@
       document.getElementById('panelMarco').classList.add('vacio');
       document.getElementById('panelRelaciones').innerHTML = '—';
       document.getElementById('panelRelaciones').classList.add('vacio');
-      document.getElementById('grafoInfo').textContent = 'Realiza una consulta para ver la red de conocimiento.';
+      document.getElementById('grafoInfo').textContent = 'Realiza una consulta o pulsa «Ver red completa».';
       fullRawNodes = [];
       fullRawEdges = [];
       filtroActivo = 'todos';
@@ -628,12 +1263,18 @@
       const info = document.getElementById('grafoInfo');
       try {
         const res = await fetch(`${API}/api/grafo`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || ('HTTP ' + res.status));
+        }
         const raw = await res.json();
         filtroActivo = 'todos';
         document.querySelectorAll('.leyenda-bar .item.filtro').forEach(el => el.classList.remove('activo'));
         document.querySelector('.leyenda-bar .item.filtro[data-tipo="todos"]')?.classList.add('activo');
         var rawNodes = raw.nodes || [];
         var rawEdges = raw.edges || [];
+        fullRawNodes = rawNodes;
+        fullRawEdges = rawEdges;
         var prepared = prepararDatos({ nodes: rawNodes, edges: rawEdges });
         dibujar(prepared.nodes.get().map(n => ({ ...n })), prepared.edges.get().map(e => ({ ...e })));
         info.textContent = 'Red completa: ' + rawNodes.length + ' nodos · ' + rawEdges.length + ' relaciones';
@@ -642,17 +1283,41 @@
       }
     }
 
-    dibujar([], []);
-
+    let resizeTimer = null;
     window.addEventListener('resize', function() {
-      if (network && data.nodes.length > 0) {
-        setTimeout(function() {
-          network.fit();
-          var scale = network.getScale();
-          network.moveTo({ scale: scale * 2.2 });
-        }, 100);
-      }
+      if (!network) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        network.redraw();
+      }, 120);
     });
+
+    (function initDesdeUrl() {
+      var params = new URLSearchParams(window.location.search);
+      var modo = params.get('modo');
+      var derecho = params.get('derecho');
+      if (derecho) {
+        var panel = document.getElementById('listadoDerechos');
+        var btn = document.getElementById('btnToggleListado');
+        if (panel && btn) {
+          panel.classList.add('abierto');
+          btn.classList.add('activo');
+          btn.setAttribute('aria-expanded', 'true');
+          panel.setAttribute('aria-hidden', 'false');
+          btn.textContent = 'Ocultar listado';
+        }
+        setTimeout(function() { consultarDerecho(derecho); }, 200);
+        return;
+      }
+      if (modo === 'explorar') {
+        verGrafoCompleto();
+        return;
+      }
+      var input = document.getElementById('queryInput');
+      if (input) {
+        setTimeout(function() { input.focus(); }, 350);
+      }
+    })();
   </script>
 </body>
 </html>

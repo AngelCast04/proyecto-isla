@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -52,7 +52,7 @@
 </head>
 <body>
   <div id="header">
-    <h1>Grafo de conocimiento — Derechos humanos</h1>
+    <h1>Grafo de conocimiento ÔÇö Derechos humanos</h1>
     <div id="info">Cargando...</div>
     <div id="controls">
       <button onclick="redibujar()">Reorganizar</button>
@@ -66,15 +66,15 @@
     let data = { nodes: [], edges: [] };
 
     const coloresPorTipo = {
-      Población: '#22c55e',
+      Poblaci├│n: '#22c55e',
       Derecho: '#3b82f6',
       Tratado: '#8b5cf6',
-      Resolución: '#ec4899',
+      Resoluci├│n: '#ec4899',
       Organismo: '#f59e0b',
       Mecanismo: '#06b6d4',
-      Concepto_Jurídico: '#84cc16',
-      País: '#ef4444',
-      Órgano: '#6366f1',
+      Concepto_Jur├¡dico: '#84cc16',
+      Pa├¡s: '#ef4444',
+      ├ôrgano: '#6366f1',
       Otro: '#71717a'
     };
 
@@ -84,7 +84,7 @@
         const raw = await res.json();
         data = prepararDatos(raw);
         document.getElementById('info').textContent =
-          `${data.nodes.length} nodos · ${data.edges.length} relaciones`;
+          `${data.nodes.length} nodos ┬À ${data.edges.length} relaciones`;
         dibujar();
       } catch (e) {
         document.getElementById('info').textContent =

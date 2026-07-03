@@ -1,15 +1,19 @@
 """API FastAPI para consultas GraphRAG con visualización de grafo impactado."""
 
+import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Raíz del proyecto (no depender del cwd de uvicorn en Render/Docker)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
+VISUALIZER_DIR = _PROJECT_ROOT / "visualizer"
 
 
 def _resolve_working_dir() -> str:
@@ -51,6 +55,23 @@ def _get_cors_origins() -> list[str]:
 CORS_ORIGINS = _get_cors_origins()
 
 app = FastAPI(title="GraphRAG Consultas")
+
+
+class NoCacheHTMLMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if (
+            request.url.path in ("/", "/consulta")
+            or request.url.path.endswith(".html")
+            or request.url.path.startswith("/l-assets/")
+        ):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+
+app.add_middleware(NoCacheHTMLMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -96,14 +117,22 @@ class QueryRequest(BaseModel):
     query: str
 
 
-@app.get("/api/grafo")
-def get_grafo_completo():
-    """Devuelve el grafo completo en formato JSON para vis.js."""
-    import igraph as ig
+def _load_grafo_desde_json(json_path: Path) -> dict:
+    with json_path.open(encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict) or "nodes" not in data:
+        raise HTTPException(status_code=500, detail="grafo.json tiene un formato inválido.")
+    return data
 
-    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
-    if not graph_path.exists():
-        raise HTTPException(status_code=404, detail="Grafo no encontrado. Ejecuta run_quickstart.py primero.")
+
+def _load_grafo_desde_pklz(graph_path: Path) -> dict:
+    try:
+        import igraph as ig
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="igraph no está instalado. Usa el entorno virtual o ejecuta export_grafo.py.",
+        ) from exc
 
     g = ig.Graph.Read_Picklez(str(graph_path))
     nodes = []
@@ -130,6 +159,48 @@ def get_grafo_completo():
             "title": desc,
         })
     return {"nodes": nodes, "edges": edges}
+
+
+def _load_grafo() -> dict:
+    """Fuente canónica: graph_igraph_data.pklz (como en Render). grafo.json solo como respaldo."""
+    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
+    if graph_path.exists():
+        return _load_grafo_desde_pklz(graph_path)
+
+    json_path = VISUALIZER_DIR / "grafo.json"
+    if json_path.exists():
+        return _load_grafo_desde_json(json_path)
+
+    raise HTTPException(
+        status_code=404,
+        detail="Grafo no encontrado. Ejecuta run_quickstart.py o export_grafo.py primero.",
+    )
+
+
+def _grafo_stats(data: dict) -> dict:
+    nodes = data.get("nodes") or []
+    edges = data.get("edges") or []
+    groups: dict[str, int] = {}
+    for node in nodes:
+        group = str(node.get("group") or "Otro")
+        groups[group] = groups.get(group, 0) + 1
+    return {
+        "nodes": len(nodes),
+        "edges": len(edges),
+        "groups": groups,
+    }
+
+
+@app.get("/api/grafo/stats")
+def get_grafo_stats():
+    """Estadísticas ligeras del grafo para el landing."""
+    return _grafo_stats(_load_grafo())
+
+
+@app.get("/api/grafo")
+def get_grafo_completo():
+    """Devuelve el grafo completo en formato JSON para vis.js."""
+    return _load_grafo()
 
 
 @app.post("/api/query")
@@ -265,11 +336,39 @@ def _generar_argumentacion(nodes: list, edges: list) -> str:
 
 
 # Servir frontend estático
-VISUALIZER_DIR = Path(__file__).resolve().parent.parent / "visualizer"
+LANDING_DIR = VISUALIZER_DIR / "dist"
+LANDING_ASSETS = LANDING_DIR / "l-assets"
+LANDING_INDEX = LANDING_DIR / "index.html"
+
+app.mount("/assets", StaticFiles(directory=VISUALIZER_DIR / "assets"), name="assets")
+_images_dir = VISUALIZER_DIR / "images"
+if _images_dir.is_dir():
+    app.mount("/images", StaticFiles(directory=_images_dir), name="images")
+if LANDING_ASSETS.is_dir():
+    app.mount("/l-assets", StaticFiles(directory=LANDING_ASSETS), name="l-assets")
+_logos_dir = LANDING_DIR / "logos"
+if _logos_dir.is_dir():
+    app.mount("/logos", StaticFiles(directory=_logos_dir), name="logos")
+_avatars_dir = LANDING_DIR / "avatars"
+_avatars_public = VISUALIZER_DIR / "landing" / "public" / "avatars"
+if _avatars_dir.is_dir():
+    app.mount("/avatars", StaticFiles(directory=_avatars_dir), name="avatars")
+elif _avatars_public.is_dir():
+    app.mount("/avatars", StaticFiles(directory=_avatars_public), name="avatars")
 
 
 @app.get("/")
 def index():
+    if not LANDING_INDEX.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="Landing no compilado. Ejecuta: cd visualizer/landing && npm run build",
+        )
+    return FileResponse(LANDING_INDEX)
+
+
+@app.get("/consulta")
+def consulta():
     return FileResponse(VISUALIZER_DIR / "consulta.html")
 
 

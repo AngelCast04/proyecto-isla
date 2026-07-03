@@ -5,8 +5,9 @@ No requiere OPENAI_API_KEY: lee el grafo directamente del disco.
 
 import json
 from pathlib import Path
+from typing import Any
 
-import igraph as ig
+import igraph as ig  # pyright: ignore[reportMissingTypeStubs]
 
 WORKING_DIR = "./grafo_libros"
 GRAPH_FILE = "graph_igraph_data.pklz"
@@ -21,14 +22,14 @@ def exportar_grafo():
             "Ejecuta primero run_quickstart.py para crear el grafo."
         )
 
-    g = ig.Graph.Read_Picklez(str(graph_path))
+    g: Any = ig.Graph.Read_Picklez(str(graph_path))  # pyright: ignore[reportUnknownMemberType]
 
-    nodes = []
+    nodes: list[dict[str, str]] = []
     for v in g.vs:
         attrs = v.attributes()
         name = str(attrs.get("name", ""))
-        tipo = attrs.get("type", "Otro")
-        desc = attrs.get("description", "")
+        tipo = str(attrs.get("type", "Otro"))
+        desc = str(attrs.get("description", ""))
         nodes.append({
             "id": name,
             "label": name[:50] + ("..." if len(name) > 50 else ""),
@@ -37,7 +38,7 @@ def exportar_grafo():
             "description": desc,
         })
 
-    edges = []
+    edges: list[dict[str, str]] = []
     for e in g.es:
         attrs = e.attributes()
         desc = attrs.get("description", "") or ""

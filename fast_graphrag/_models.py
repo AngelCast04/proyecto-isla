@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic._internal import _model_construction
@@ -75,6 +75,80 @@ def dump_to_reference_list(data: Iterable[object], separator: str = "\n=====\n\n
 
 class TAnswer(BaseModel):
     answer: str
+
+
+class THallazgoClave(BaseModel):
+    titulo: str = Field(..., description="Título breve del hallazgo (máx. 8 palabras)")
+    detalle: str = Field(..., description="Explicación del hallazgo basada en las fuentes")
+    fuentes: List[int] = Field(
+        default_factory=list,
+        description="IDs numéricos de las fuentes que respaldan este hallazgo",
+    )
+
+
+class TViolacionPresunta(BaseModel):
+    titulo: str = Field(
+        ...,
+        description=(
+            "Nombre de la presunta violación de DD.HH., terminando en punto. "
+            "Ej: 'Trata de personas y trabajo forzado.'"
+        ),
+    )
+    analisis: str = Field(
+        ...,
+        description="Párrafo de análisis jurídico sistemático que explica por qué aplica al caso",
+    )
+    fuentes: List[int] = Field(
+        default_factory=list,
+        description="IDs de las fuentes que respaldan este análisis",
+    )
+
+
+class TTratadoAplicable(BaseModel):
+    instrumento: str = Field(..., description="Nombre del tratado o instrumento internacional")
+    articulos_clave: str = Field(
+        ...,
+        description="Artículos relevantes separados por comas. Ej: 'Arts. 2, 3, 6, 9, 11, 19, 32, 34'",
+    )
+    observaciones: Optional[str] = Field(
+        None,
+        description="Observaciones de organismos internacionales citadas en las fuentes, si aplica",
+    )
+
+
+class TStructuredQueryAnswer(BaseModel):
+    """Respuesta jurídica estructurada al estilo análisis sistemático (Claude)."""
+
+    razonamiento: str = Field(
+        ...,
+        description="Análisis interno paso a paso antes de redactar la respuesta final",
+    )
+    introduccion: str = Field(
+        ...,
+        description="Párrafo introductorio breve que contextualiza el caso y el enfoque del análisis",
+    )
+    violaciones: List[TViolacionPresunta] = Field(
+        default_factory=list,
+        description="Lista de presuntas violaciones de derechos humanos identificadas",
+        max_length=8,
+    )
+    tratados: List[TTratadoAplicable] = Field(
+        default_factory=list,
+        description="Tratados e instrumentos internacionales aplicables con artículos clave",
+        max_length=15,
+    )
+    conclusion: Optional[str] = Field(
+        None,
+        description="Párrafo de cierre sobre convergencia de violaciones o vías de protección",
+    )
+    confianza: Literal["alta", "media", "baja"] = Field(
+        ...,
+        description="Nivel de confianza según la evidencia disponible en las fuentes",
+    )
+    limitaciones: Optional[str] = Field(
+        None,
+        description="Información no encontrada, ambigua o insuficiente en las fuentes",
+    )
 
 
 class TEditRelation(BaseModel):

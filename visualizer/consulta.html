@@ -441,6 +441,108 @@
     .panel-content .vacio { color: #71717a; font-style: italic; }
     .panel-content ul { margin: 0.25rem 0 0 1rem; }
     .panel-content li { margin-bottom: 0.2rem; }
+    .respuesta-resumen {
+      font-weight: 600;
+      color: #f4f4f5;
+      margin-bottom: 0.65rem;
+      line-height: 1.45;
+    }
+    .respuesta-detalle {
+      color: #d4d4d8;
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+    }
+    .respuesta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+    }
+    .respuesta-tag {
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      color: #a1a1aa;
+    }
+    .respuesta-tag.confianza-alta { border-color: #22c55e; color: #86efac; }
+    .respuesta-tag.confianza-media { border-color: #eab308; color: #fde047; }
+    .respuesta-tag.confianza-baja { border-color: #ef4444; color: #fca5a5; }
+
+    /* Análisis jurídico estilo Claude */
+    .analisis-juridico { color: #d4d4d8; line-height: 1.55; }
+    .analisis-juridico .intro {
+      color: #e4e4e7;
+      margin-bottom: 0.75rem;
+    }
+    .analisis-juridico hr {
+      border: none;
+      border-top: 1px solid #3f3f46;
+      margin: 0.75rem 0 1rem;
+    }
+    .analisis-juridico .titulo-principal {
+      color: #818cf8;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 0.85rem;
+    }
+    .analisis-juridico .subseccion {
+      color: #818cf8;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 1rem 0 0.6rem;
+    }
+    .analisis-juridico .violacion {
+      margin-bottom: 0.85rem;
+    }
+    .analisis-juridico .violacion strong {
+      color: #f4f4f5;
+      font-weight: 600;
+    }
+    .analisis-juridico .violacion p {
+      margin: 0;
+      text-align: justify;
+    }
+    .analisis-juridico .tabla-tratados {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin: 0.5rem 0 0.85rem;
+    }
+    .analisis-juridico .tabla-tratados th {
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      background: #27272a;
+      color: #a1a1aa;
+      border: 1px solid #3f3f46;
+      font-weight: 600;
+    }
+    .analisis-juridico .tabla-tratados td {
+      padding: 0.45rem 0.6rem;
+      border: 1px solid #3f3f46;
+      vertical-align: top;
+    }
+    .analisis-juridico .tabla-tratados tr:nth-child(even) td {
+      background: rgba(39, 39, 42, 0.5);
+    }
+    .analisis-juridico .conclusion {
+      margin-top: 0.85rem;
+      color: #e4e4e7;
+      font-style: italic;
+    }
+    .analisis-juridico .limitaciones {
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      color: #a1a1aa;
+      border-left: 2px solid #eab308;
+      padding-left: 0.6rem;
+    }
+    .analisis-juridico .meta-confianza {
+      margin-top: 0.65rem;
+      font-size: 0.72rem;
+      color: #71717a;
+    }
     .marco-tipo { margin-top: 0.5rem; }
     .marco-tipo:first-child { margin-top: 0; }
     .marco-tipo strong { font-size: 0.8rem; color: #a1a1aa; }
@@ -679,6 +781,54 @@
 
     const FLOAT_MAX_NODES = 800;
     const FLOAT_RESUME_MS = 2800;
+    const LARGE_GRAPH_NODES = 500;
+    const FULL_GRAPH_NODES = 1200;
+    let modoRedCompleta = false;
+
+    function esGrafoGrande(nodeCount) {
+      return nodeCount > LARGE_GRAPH_NODES || modoRedCompleta;
+    }
+
+    function estiloNodoPorEscala(nodeCount, group) {
+      if (nodeCount > FULL_GRAPH_NODES) {
+        return {
+          size: 4,
+          font: { size: 0, color: '#e4e4e7' },
+          borderWidth: 0.8,
+          shadow: { enabled: false }
+        };
+      }
+      if (nodeCount > LARGE_GRAPH_NODES) {
+        return {
+          size: 8,
+          font: { size: 0, color: '#e4e4e7' },
+          borderWidth: 1.2,
+          shadow: { enabled: false }
+        };
+      }
+      return {
+        size: 24,
+        font: { size: 14, color: '#e4e4e7' },
+        borderWidth: 2.5,
+        shadow: {
+          enabled: true,
+          color: 'rgba(0,0,0,0.45)',
+          size: 14,
+          x: 2,
+          y: 6
+        }
+      };
+    }
+
+    function estiloAristaPorEscala(nodeCount) {
+      if (nodeCount > FULL_GRAPH_NODES) {
+        return { width: 0.25, smooth: false, color: { color: 'rgba(82,82,91,0.35)', highlight: '#a1a1aa' } };
+      }
+      if (nodeCount > LARGE_GRAPH_NODES) {
+        return { width: 0.6, smooth: { type: 'continuous' }, color: { color: '#3f3f46', highlight: '#a1a1aa' } };
+      }
+      return { width: 1.5, smooth: { type: 'continuous' }, color: { color: '#52525b', highlight: '#a1a1aa' } };
+    }
 
     const coloresPorTipo = {
       Población: '#22c55e', POBLACIÓN: '#22c55e', poblacion: '#22c55e',
@@ -720,42 +870,44 @@
       return String(s || '').trim().toLowerCase().replace(/_/g, ' ').replace(/í/g, 'i').replace(/ó/g, 'o');
     }
 
-    function prepararDatos(raw, posiciones) {
+    function prepararDatos(raw, posiciones, opts) {
+      opts = opts || {};
       var pos = posiciones || {};
+      var nodeCount = (raw.nodes || []).length;
+      var lite = !!opts.lite || esGrafoGrande(nodeCount);
       const nodes = new vis.DataSet(
         (raw.nodes || []).map(n => {
+          var estilo = estiloNodoPorEscala(lite ? nodeCount : (raw.nodes || []).length, n.group);
           var obj = {
             id: n.id,
-            label: n.label,
+            label: lite ? '' : n.label,
             title: n.title,
             color: {
               background: colorPorTipo(n.group),
               border: 'rgba(255,255,255,0.4)',
               highlight: { background: colorPorTipo(n.group), border: '#a1a1aa' }
             },
-            borderWidth: 2.5,
-            shape: usaFormaPentagono(n.group) ? 'hexagon' : 'dot',
-            font: { size: 14, color: '#e4e4e7' },
-            shadow: {
-              enabled: true,
-              color: 'rgba(0,0,0,0.45)',
-              size: 14,
-              x: 2,
-              y: 6
-            }
+            borderWidth: estilo.borderWidth,
+            shape: usaFormaPentagono(n.group) && !lite ? 'hexagon' : 'dot',
+            font: estilo.font,
+            size: estilo.size,
+            shadow: estilo.shadow
           };
           if (pos[n.id]) { obj.x = pos[n.id].x; obj.y = pos[n.id].y; }
           return obj;
         })
       );
+      var edgeStyle = estiloAristaPorEscala(lite ? nodeCount : (raw.edges || []).length);
       const edges = new vis.DataSet(
         (raw.edges || []).map(e => ({
           from: e.from,
           to: e.to,
           title: e.title,
-          label: e.label || '',
-          arrows: 'to',
-          color: { color: '#52525b', highlight: '#a1a1aa' }
+          label: lite ? '' : (e.label || ''),
+          arrows: lite ? '' : 'to',
+          width: edgeStyle.width,
+          smooth: edgeStyle.smooth,
+          color: edgeStyle.color
         }))
       );
       return { nodes, edges };
@@ -798,38 +950,114 @@
       if (nodeCount <= 40) return 120;
       if (nodeCount <= 150) return 100;
       if (nodeCount <= 500) return 80;
-      if (nodeCount <= 1200) return 50;
-      return 35;
+      if (nodeCount <= 1200) return 120;
+      if (nodeCount <= 2500) return 220;
+      return 280;
+    }
+
+    function tiempoLayoutMs(nodeCount, iterations) {
+      if (nodeCount > FULL_GRAPH_NODES) {
+        return Math.min(60000, 3000 + iterations * 150);
+      }
+      if (nodeCount > LARGE_GRAPH_NODES) {
+        return Math.min(30000, 1500 + iterations * 80);
+      }
+      return Math.min(12000, 80 + iterations * 40);
+    }
+
+    function opcionesFisicaLayout(nodeCount, iterations) {
+      if (nodeCount > LARGE_GRAPH_NODES) {
+        return {
+          enabled: true,
+          barnesHut: {
+            gravitationalConstant: nodeCount > FULL_GRAPH_NODES ? -12000 : -6000,
+            centralGravity: 0.15,
+            springLength: nodeCount > FULL_GRAPH_NODES ? 60 : 90,
+            springConstant: 0.018,
+            damping: 0.92,
+            avoidOverlap: 0.05
+          },
+          solver: 'barnesHut',
+          stabilization: { enabled: true, iterations: iterations, fit: false },
+          maxVelocity: 80,
+          minVelocity: 0.1
+        };
+      }
+      return {
+        enabled: true,
+        forceAtlas2Based: {
+          gravitationalConstant: -45,
+          centralGravity: 0.005,
+          springLength: 110,
+          springConstant: 0.04,
+          avoidOverlap: 0.85,
+          damping: 0.6
+        },
+        solver: 'forceAtlas2Based',
+        stabilization: { enabled: true, iterations: iterations, fit: false },
+        maxVelocity: 50,
+        minVelocity: 0.75
+      };
     }
 
     function ajustarVista(animated) {
       if (!network || data.nodes.length === 0) return;
+      var nodeCount = data.nodes.length;
+      var padding = nodeCount > FULL_GRAPH_NODES ? 100 : (nodeCount > LARGE_GRAPH_NODES ? 72 : 48);
       network.fit({
         animation: animated === false
           ? false
-          : { duration: 280, easingFunction: 'easeInOutQuad' },
-        padding: 48
+          : { duration: nodeCount > LARGE_GRAPH_NODES ? 120 : 280, easingFunction: 'easeInOutQuad' },
+        padding: padding
       });
+      if (nodeCount > LARGE_GRAPH_NODES) {
+        setTimeout(function() {
+          if (!network) return;
+          network.fit({ animation: false, padding: padding });
+        }, 400);
+        setTimeout(function() {
+          if (!network) return;
+          network.fit({ animation: false, padding: padding });
+        }, 1200);
+      }
     }
 
-    function ejecutarLayout(nodeCount, animatedView) {
+    function actualizarInfoLayout(msg) {
+      var info = document.getElementById('grafoInfo');
+      if (info && msg) info.textContent = msg;
+    }
+
+    function ejecutarLayout(nodeCount, animatedView, meta) {
       if (!network || nodeCount === 0) return;
 
       const token = ++layoutToken;
       const iterations = iteracionesEstabilizacion(nodeCount);
+      const timeoutMs = tiempoLayoutMs(nodeCount, iterations);
+      meta = meta || {};
 
-      network.setOptions({
-        physics: {
-          enabled: true,
-          stabilization: { enabled: true, iterations: iterations, fit: false }
-        }
-      });
+      if (meta.label) {
+        actualizarInfoLayout(meta.label + ' (0%)');
+      }
+
+      network.setOptions({ physics: opcionesFisicaLayout(nodeCount, iterations) });
+
+      var progresoTimer = null;
+      if (meta.label && nodeCount > LARGE_GRAPH_NODES) {
+        var inicio = Date.now();
+        progresoTimer = setInterval(function() {
+          if (token !== layoutToken) return;
+          var pct = Math.min(95, Math.round(((Date.now() - inicio) / timeoutMs) * 100));
+          actualizarInfoLayout(meta.label + ' (' + pct + '%)');
+        }, 500);
+      }
 
       const onDone = function() {
         if (token !== layoutToken) return;
+        if (progresoTimer) clearInterval(progresoTimer);
         network.stopSimulation();
         ajustarVista(animatedView);
         activarFlotacion(nodeCount);
+        if (meta.onComplete) meta.onComplete();
       };
 
       network.once('stabilized', onDone);
@@ -837,10 +1065,12 @@
 
       setTimeout(function() {
         if (token !== layoutToken) return;
+        if (progresoTimer) clearInterval(progresoTimer);
         network.stopSimulation();
         ajustarVista(false);
         activarFlotacion(nodeCount);
-      }, Math.min(12000, 80 + iterations * 40));
+        if (meta.onComplete) meta.onComplete();
+      }, timeoutMs);
     }
 
     function crearNetwork() {
@@ -865,6 +1095,12 @@
       const nodeCount = (nds && nds.length) || 0;
       const preserveView = !!opts.preserveView;
 
+      if (opts.fullGraph) {
+        modoRedCompleta = true;
+      } else if (!preserveView && nodeCount <= LARGE_GRAPH_NODES) {
+        modoRedCompleta = false;
+      }
+
       data.nodes.clear();
       data.edges.clear();
       if (nds && nds.length) data.nodes.add(nds);
@@ -882,7 +1118,7 @@
         return;
       }
 
-      ejecutarLayout(nodeCount, opts.animatedView !== false);
+      ejecutarLayout(nodeCount, opts.animatedView !== false, opts.layoutMeta || null);
     }
 
     function centrarGrafo() {
@@ -1102,6 +1338,76 @@
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
     }
 
+    function renderRespuestaEstructurada(structured, fallbackText) {
+      if (!structured || typeof structured !== 'object') {
+        const txt = limpiarTextoExplicacion(fallbackText || '');
+        return txt ? '<div class="analisis-juridico"><p class="intro">' + esc(txt) + '</p></div>' : '';
+      }
+
+      const intro = limpiarTextoExplicacion(structured.introduccion || '');
+      const violaciones = structured.violaciones || [];
+      const tratados = structured.tratados || [];
+      const conclusion = limpiarTextoExplicacion(structured.conclusion || '');
+      const limitaciones = structured.limitaciones || '';
+      const confianza = structured.confianza || '';
+
+      let html = '<div class="analisis-juridico">';
+
+      if (intro) {
+        html += '<p class="intro">' + esc(intro) + '</p>';
+        html += '<hr>';
+      }
+
+      if (violaciones.length || tratados.length) {
+        html += '<h4 class="titulo-principal">Análisis jurídico detallado</h4>';
+      }
+
+      if (violaciones.length) {
+        html += '<h5 class="subseccion">I. Presuntas violaciones de derechos humanos</h5>';
+        violaciones.forEach(function(v) {
+          let titulo = String(v.titulo || '').trim();
+          if (titulo && !titulo.endsWith('.')) titulo += '.';
+          const analisis = limpiarTextoExplicacion(v.analisis || '');
+          const fuentes = v.fuentes || [];
+          const refs = fuentes.length ? ' [' + fuentes.join(', ') + ']' : '';
+          html += '<div class="violacion"><p><strong>' + esc(titulo) + '</strong> ' + esc(analisis + refs) + '</p></div>';
+        });
+      }
+
+      if (tratados.length) {
+        html += '<h5 class="subseccion">II. Tratados internacionales aplicables</h5>';
+        html += '<table class="tabla-tratados"><thead><tr><th>Instrumento</th><th>Artículos clave</th></tr></thead><tbody>';
+        tratados.forEach(function(t) {
+          let inst = String(t.instrumento || '');
+          const obs = String(t.observaciones || '').trim();
+          if (obs) inst += ' (' + obs + ')';
+          html += '<tr><td>' + esc(inst) + '</td><td>' + esc(t.articulos_clave || '') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      if (conclusion) {
+        html += '<p class="conclusion">' + esc(conclusion) + '</p>';
+      }
+
+      if (limitaciones) {
+        html += '<p class="limitaciones"><strong>Limitaciones:</strong> ' + esc(limitaciones) + '</p>';
+      }
+
+      if (confianza) {
+        html += '<p class="meta-confianza">Nivel de confianza: ' + esc(confianza) + '</p>';
+      }
+
+      html += '</div>';
+
+      if (!intro && !violaciones.length && !tratados.length) {
+        const txt = limpiarTextoExplicacion(fallbackText || '');
+        return txt ? '<div class="analisis-juridico"><p class="intro">' + esc(txt) + '</p></div>' : '';
+      }
+
+      return html;
+    }
+
     function renderMarcoNormativo(nodes) {
       if (!nodes || !nodes.length) return '<span class="vacio">No hay datos.</span>';
       const byType = {};
@@ -1161,6 +1467,7 @@
       document.getElementById('panelRelaciones').innerHTML = '—';
       document.getElementById('panelRelaciones').classList.add('vacio');
       document.getElementById('grafoInfo').textContent = 'Realiza una consulta o pulsa «Ver red completa».';
+      modoRedCompleta = false;
       fullRawNodes = [];
       fullRawEdges = [];
       filtroActivo = 'todos';
@@ -1206,11 +1513,19 @@
         if (typeof json.response === 'string') {
           textoRespuesta = json.response;
         } else if (json.response && typeof json.response === 'object') {
-          textoRespuesta = json.response.answer ?? json.response.response ?? json.response.text ?? '';
+          textoRespuesta = json.response.respuesta ?? json.response.introduccion ?? json.response.answer ?? '';
         }
-        textoRespuesta = limpiarTextoExplicacion(String(textoRespuesta || ''));
+        const htmlRespuesta = renderRespuestaEstructurada(json.structured, textoRespuesta);
+        let htmlFinal = htmlRespuesta;
+        if (typeof json.response === 'string' && json.response.includes('no constituye asesoría jurídica')) {
+          const idx = json.response.indexOf('—');
+          if (idx >= 0) {
+            htmlFinal += '<p class="meta-confianza" style="margin-top:1rem;font-style:italic">' +
+              esc(json.response.slice(idx + 1).trim()) + '</p>';
+          }
+        }
         panelExp.classList.remove('loading', 'vacio');
-        panelExp.innerHTML = textoRespuesta ? esc(textoRespuesta) : '<span class="vacio">Sin explicación.</span>';
+        panelExp.innerHTML = htmlFinal || '<span class="vacio">Sin explicación.</span>';
 
         const arg = String(json.argumentacion || '');
         panelArg.classList.remove('vacio');
@@ -1219,6 +1534,7 @@
         const imp = json.impacted || {};
         const rawNodes = imp.nodes || [];
         const rawEdges = imp.edges || [];
+        modoRedCompleta = false;
         fullRawNodes = rawNodes;
         fullRawEdges = rawEdges;
         filtroActivo = 'todos';
@@ -1252,6 +1568,7 @@
     async function verGrafoCompleto() {
       const info = document.getElementById('grafoInfo');
       try {
+        info.textContent = 'Cargando red completa...';
         const res = await fetch(`${API}/api/grafo`);
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -1265,9 +1582,23 @@
         var rawEdges = raw.edges || [];
         fullRawNodes = rawNodes;
         fullRawEdges = rawEdges;
-        var prepared = prepararDatos({ nodes: rawNodes, edges: rawEdges });
-        dibujar(prepared.nodes.get().map(n => ({ ...n })), prepared.edges.get().map(e => ({ ...e })));
-        info.textContent = 'Red completa: ' + rawNodes.length + ' nodos · ' + rawEdges.length + ' relaciones';
+        modoRedCompleta = true;
+        info.textContent = 'Organizando ' + rawNodes.length + ' nodos · ' + rawEdges.length + ' relaciones...';
+        var prepared = prepararDatos({ nodes: rawNodes, edges: rawEdges }, null, { lite: true });
+        dibujar(
+          prepared.nodes.get().map(n => ({ ...n })),
+          prepared.edges.get().map(e => ({ ...e })),
+          {
+            fullGraph: true,
+            animatedView: false,
+            layoutMeta: {
+              label: 'Red completa: ' + rawNodes.length + ' nodos · ' + rawEdges.length + ' relaciones',
+              onComplete: function() {
+                info.textContent = 'Red completa: ' + rawNodes.length + ' nodos · ' + rawEdges.length + ' relaciones — usa zoom o «Centrar»';
+              }
+            }
+          }
+        );
       } catch (e) {
         info.textContent = 'Error al cargar la red';
       }
@@ -1279,6 +1610,7 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function() {
         network.redraw();
+        ajustarVista(false);
       }, 120);
     });
 

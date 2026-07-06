@@ -82,6 +82,15 @@ app.add_middleware(
 
 # GraphRAG se carga al iniciar (lazy para evitar errores si no hay API key)
 _grag = None
+_orchestrator = None
+
+
+def get_orchestrator():
+    global _orchestrator
+    if _orchestrator is None:
+        from app.agents import QueryOrchestrator
+        _orchestrator = QueryOrchestrator(working_dir=WORKING_DIR)
+    return _orchestrator
 
 
 def get_grag():
@@ -205,13 +214,14 @@ def get_grafo_completo():
 
 @app.post("/api/query")
 def consultar(request: QueryRequest):
-    """Ejecuta una consulta y devuelve respuesta + nodos/aristas impactados."""
-    if not request.query.strip():
-        raise HTTPException(status_code=400, detail="La consulta no puede estar vacía.")
-
+    """Ejecuta una consulta vía orquestador multi-agente con guardrails."""
     try:
         grag = get_grag()
-        respuesta = grag.query(request.query.strip())
+        ctx = get_orchestrator().execute(
+            grag,
+            request.query,
+            _generar_argumentacion,
+        )
     except Exception as e:
         if "api_key" in str(e).lower() or "OPENAI" in str(e).upper():
             raise HTTPException(
@@ -220,77 +230,67 @@ def consultar(request: QueryRequest):
             )
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Extraer nodos y aristas del contexto usado
-    node_ids = {e.name for e, _ in respuesta.context.entities}
-    edges_impacted = [
-        {"from": r.source, "to": r.target, "label": (r.description or "")[:100], "title": r.description or ""}
-        for r, _ in respuesta.context.relations
-    ]
-    # Incluir nodos que aparecen en las relaciones
-    for e in edges_impacted:
-        node_ids.add(e["from"])
-        node_ids.add(e["to"])
-
-    # Obtener datos completos de nodos impactados desde el grafo
-    import igraph as ig
-
-    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
-    nodes_impacted = []
-    if graph_path.exists():
-        g = ig.Graph.Read_Picklez(str(graph_path))
-        for v in g.vs:
-            name = str(v["name"])
-            if name in node_ids:
-                attrs = v.attributes()
-                tipo = attrs.get("type", "Otro")
-                desc = attrs.get("description", "")
-                nodes_impacted.append({
-                    "id": name,
-                    "label": name[:50] + ("..." if len(name) > 50 else ""),
-                    "title": f"{tipo}\n{desc}"[:500],
-                    "group": tipo,
-                    "description": desc,
-                })
-
-    # Si hay relaciones pero no nodos (p. ej. ruta al pkl distinta o ids no coinciden), dibujar al menos extremos
-    if not nodes_impacted and edges_impacted:
-        seen: set[str] = set()
-        for e in edges_impacted:
-            for k in ("from", "to"):
-                nid = e.get(k)
-                if not nid or nid in seen:
-                    continue
-                seen.add(nid)
-                nodes_impacted.append({
-                    "id": nid,
-                    "label": nid[:50] + ("..." if len(nid) > 50 else ""),
-                    "title": "Otro",
-                    "group": "Otro",
-                    "description": "",
-                })
-
-    raw = respuesta.response
-    if hasattr(raw, "answer"):
-        raw = getattr(raw, "answer", raw)
-    response_text = str(raw) if raw is not None else ""
-
-    # Generar ARGUMENTACIÓN: listado estructurado por tipo para orientar al personal
-    argumentacion = _generar_argumentacion(nodes_impacted, edges_impacted)
+    if ctx.blocked:
+        raise HTTPException(status_code=400, detail=ctx.block_reason or "Consulta no permitida.")
 
     return {
-        "response": response_text,
-        "argumentacion": argumentacion,
+        "response": ctx.response_text,
+        "structured": ctx.structured,
+        "argumentacion": ctx.argumentacion,
+        "intent": ctx.intent,
+        "warnings": ctx.input_warnings + ctx.output_warnings,
         "impacted": {
-            "nodes": nodes_impacted,
-            "edges": edges_impacted,
+            "nodes": ctx.nodes_impacted,
+            "edges": ctx.edges_impacted,
         },
     }
 
 
-def _generar_argumentacion(nodes: list, edges: list) -> str:
-    """Genera texto de argumentación listando tratados, derechos, mecanismos, etc."""
+def _generar_argumentacion(nodes: list, edges: list, structured: dict | None = None) -> str:
+    """Genera texto de argumentación combinando hallazgos del LLM y el grafo impactado."""
+    lineas: list[str] = []
+
+    if structured:
+        violaciones = structured.get("violaciones") or []
+        if violaciones:
+            lineas.append("Presuntas violaciones identificadas en el análisis:\n")
+            for v in violaciones:
+                titulo = v.get("titulo", "")
+                analisis = v.get("analisis", "")
+                fuentes = v.get("fuentes") or []
+                refs = f" [{', '.join(str(f) for f in fuentes)}]" if fuentes else ""
+                lineas.append(f"  • {titulo} {analisis}{refs}".strip())
+
+        tratados = structured.get("tratados") or []
+        if tratados:
+            lineas.append("\nTratados internacionales aplicables:")
+            for t in tratados:
+                inst = t.get("instrumento", "")
+                arts = t.get("articulos_clave", "")
+                lineas.append(f"  • {inst}: {arts}")
+
+        limitaciones = structured.get("limitaciones")
+        if limitaciones:
+            lineas.append(f"\nLimitaciones: {limitaciones}")
+
+        confianza = structured.get("confianza")
+        if confianza:
+            lineas.append(f"\nNivel de confianza: {confianza}")
+
     if not nodes:
+        if lineas:
+            return "\n".join(lineas).strip()
         return "No se encontraron elementos en el grafo para esta consulta."
+
+    if lineas:
+        lineas.append(
+            "\n\nElementos del grafo impactado relevantes para orientar la labor en derechos humanos:\n"
+        )
+    else:
+        lineas.append(
+            "A partir del análisis del grafo impactado, se identifican los siguientes elementos "
+            "relevantes para orientar la labor en derechos humanos:\n"
+        )
 
     orden_tipos = [
         ("Tratado", "Tratados"),
@@ -304,13 +304,10 @@ def _generar_argumentacion(nodes: list, edges: list) -> str:
         ("País", "Países"),
         ("Otro", "Otros"),
     ]
+
     def normalizar(s: str) -> str:
         return s.lower().replace("_", " ").replace("í", "i").replace("ó", "o").strip()
 
-    lineas = [
-        "A partir del análisis del grafo impactado, se identifican los siguientes elementos "
-        "relevantes para orientar la labor en derechos humanos:\n"
-    ]
     for tipo_key, etiqueta in orden_tipos:
         tn = normalizar(tipo_key)
         nodos_tipo = [n for n in nodes if normalizar(str(n.get("group", ""))) == tn]

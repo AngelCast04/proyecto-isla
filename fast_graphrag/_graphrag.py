@@ -5,7 +5,7 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, Union
 
 from fast_graphrag._llm import BaseLLMService, format_and_send_prompt
 from fast_graphrag._llm._base import BaseEmbeddingService
-from fast_graphrag._models import TAnswer
+from fast_graphrag._models import TAnswer, TStructuredQueryAnswer
 from fast_graphrag._policies._base import BaseEdgeUpsertPolicy, BaseGraphUpsertPolicy, BaseNodeUpsertPolicy
 from fast_graphrag._prompt import PROMPTS
 from fast_graphrag._services._chunk_extraction import BaseChunkingService
@@ -26,6 +26,7 @@ class InsertParam:
 class QueryParam:
     with_references: bool = field(default=False)
     only_context: bool = field(default=False)
+    structured: bool = field(default=False)
     entities_max_tokens: int = field(default=4000)
     relations_max_tokens: int = field(default=3000)
     chunks_max_tokens: int = field(default=9000)
@@ -200,11 +201,22 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         if params.only_context:
             answer = ""
         else:
-            response_model = TAnswer if response_model is None else response_model
+            if params.structured:
+                response_model = TStructuredQueryAnswer if response_model is None else response_model
+                prompt_key = (
+                    "generate_response_query_structured"
+                    if params.with_references
+                    else "generate_response_query_structured_no_refs"
+                )
+            else:
+                response_model = TAnswer if response_model is None else response_model
+                prompt_key = (
+                    "generate_response_query_with_references"
+                    if params.with_references
+                    else "generate_response_query_no_references"
+                )
             llm_response, _ = await format_and_send_prompt(
-                prompt_key="generate_response_query_with_references"
-                if params.with_references
-                else "generate_response_query_no_references",
+                prompt_key=prompt_key,
                 llm=self.llm_service,
                 format_kwargs={
                     "query": query,
@@ -212,7 +224,9 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                 },
                 response_model=response_model,
             )
-            if response_model is None:
+            if isinstance(llm_response, TStructuredQueryAnswer):
+                answer = llm_response
+            elif response_model is None or response_model is TAnswer:
                 answer = llm_response.answer
             else:
                 answer = getattr(llm_response, "answer", llm_response)

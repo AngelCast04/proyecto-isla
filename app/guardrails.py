@@ -122,7 +122,7 @@ def validate_output(
     *,
     has_context: bool,
     intent: str = "dh_query",
-    append_disclaimer: bool = True,
+    append_disclaimer: bool = False,
 ) -> OutputGuardrailResult:
     """Ajusta la respuesta según evidencia recuperada y reglas de dominio."""
     warnings: list[str] = []

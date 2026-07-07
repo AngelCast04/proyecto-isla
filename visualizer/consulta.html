@@ -415,20 +415,78 @@
       border-bottom: 1px solid #27272a;
       display: flex;
       flex-direction: column;
-      flex: 1;
       min-height: 0;
       overflow: hidden;
     }
+    .panel:nth-child(1) { flex: 2.4; }
+    .panel:nth-child(2) { flex: 1.5; }
+    .panel:nth-child(3) { flex: 1.2; }
+    .panel:nth-child(4) { flex: 1.2; }
     .panel:last-child { border-bottom: none; }
-    .panel h3 {
-      padding: 0.6rem 1rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #a1a1aa;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+    .panel-head {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1rem;
       border-bottom: 1px solid #27272a;
       flex-shrink: 0;
+      background: #1c1c1f;
+      cursor: pointer;
+      user-select: none;
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid #27272a;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+    }
+    .panel-head:hover { background: #222226; }
+    .panel-head .panel-icon {
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 0.35rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      flex-shrink: 0;
+    }
+    .panel-head .panel-icon.exp { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+    .panel-head .panel-icon.arg { background: rgba(245,158,11,0.15); color: #fcd34d; }
+    .panel-head .panel-icon.mar { background: rgba(139,92,246,0.18); color: #c4b5fd; }
+    .panel-head .panel-icon.rel { background: rgba(6,182,212,0.15); color: #67e8f9; }
+    .panel-head .panel-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #d4d4d8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex: 1;
+    }
+    .panel-head .panel-badge {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      background: #27272a;
+      color: #71717a;
+      border: 1px solid #3f3f46;
+      min-width: 1.2rem;
+      text-align: center;
+    }
+    .panel-head .panel-badge.activo {
+      background: rgba(99,102,241,0.15);
+      color: #c4b5fd;
+      border-color: rgba(99,102,241,0.35);
+    }
+    .panel-head .panel-chevron {
+      color: #52525b;
+      font-size: 0.7rem;
+      transition: transform 0.2s ease;
+    }
+    .panel.colapsado .panel-chevron { transform: rotate(-90deg); }
+    .panel.colapsado .panel-content { display: none; }
+    .panel h3 {
+      display: none;
     }
     .panel-content {
       flex: 1;
@@ -543,9 +601,34 @@
       font-size: 0.72rem;
       color: #71717a;
     }
-    .marco-tipo { margin-top: 0.5rem; }
+    .marco-tipo {
+      margin-top: 0.65rem;
+      padding: 0.5rem 0.55rem;
+      background: #1f1f23;
+      border: 1px solid #27272a;
+      border-radius: 0.4rem;
+    }
     .marco-tipo:first-child { margin-top: 0; }
-    .marco-tipo strong { font-size: 0.8rem; color: #a1a1aa; }
+    .marco-tipo-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+    .marco-tipo strong {
+      font-size: 0.75rem;
+      color: #c4b5fd;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .marco-tipo-count {
+      font-size: 0.65rem;
+      padding: 0.05rem 0.4rem;
+      border-radius: 999px;
+      background: #27272a;
+      color: #a1a1aa;
+    }
     .marco-tipo .item { display: flex; align-items: center; gap: 0.4rem; margin: 0.25rem 0; }
     .marco-tipo .item span:first-child { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .relacion-item {
@@ -560,6 +643,89 @@
 
     .loading { color: #f59e0b; }
     .error { color: #ef4444; }
+
+    .estado-vacio {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+      padding: 0.5rem 0.25rem;
+      color: #71717a;
+    }
+    .estado-vacio-icon {
+      font-size: 1.1rem;
+      opacity: 0.85;
+      line-height: 1;
+    }
+    .estado-vacio-titulo {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      margin: 0;
+    }
+    .estado-vacio-hint {
+      font-size: 0.75rem;
+      line-height: 1.45;
+      margin: 0;
+      font-style: normal;
+    }
+
+    .skeleton {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .skeleton-line {
+      height: 0.65rem;
+      border-radius: 0.25rem;
+      background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.2s ease-in-out infinite;
+    }
+    .skeleton-line.w80 { width: 80%; }
+    .skeleton-line.w60 { width: 60%; }
+    .skeleton-line.w40 { width: 40%; }
+    @keyframes skeleton-pulse {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    .argumentacion-block {
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #27272a;
+    }
+    .argumentacion-block:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .argumentacion-block h6 {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #818cf8;
+      margin: 0 0 0.45rem;
+    }
+    .argumentacion-block ul {
+      margin: 0;
+      padding-left: 1rem;
+      list-style: disc;
+    }
+    .argumentacion-block li {
+      margin-bottom: 0.35rem;
+      color: #d4d4d8;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+    .argumentacion-meta {
+      font-size: 0.72rem;
+      color: #71717a;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #3f3f46;
+    }
 
     @media print {
       body { height: auto; overflow: visible; }
@@ -684,21 +850,41 @@
   </div>
 
   <section class="paneles">
-    <div class="panel">
-      <h3>Explicación</h3>
-      <div class="panel-content vacio" id="panelExplicacion">—</div>
+    <div class="panel" data-panel="explicacion">
+      <button type="button" class="panel-head" aria-expanded="true" onclick="togglePanel(this)">
+        <span class="panel-icon exp">§</span>
+        <span class="panel-title">Explicación</span>
+        <span class="panel-badge" id="badgeExplicacion">—</span>
+        <span class="panel-chevron" aria-hidden="true">▼</span>
+      </button>
+      <div class="panel-content vacio" id="panelExplicacion"></div>
     </div>
-    <div class="panel">
-      <h3>Argumentación</h3>
-      <div class="panel-content vacio" id="panelArgumentacion">—</div>
+    <div class="panel" data-panel="argumentacion">
+      <button type="button" class="panel-head" aria-expanded="true" onclick="togglePanel(this)">
+        <span class="panel-icon arg">¶</span>
+        <span class="panel-title">Argumentación</span>
+        <span class="panel-badge" id="badgeArgumentacion">—</span>
+        <span class="panel-chevron" aria-hidden="true">▼</span>
+      </button>
+      <div class="panel-content vacio" id="panelArgumentacion"></div>
     </div>
-    <div class="panel">
-      <h3>Marco normativo</h3>
-      <div class="panel-content vacio" id="panelMarco">—</div>
+    <div class="panel" data-panel="marco">
+      <button type="button" class="panel-head" aria-expanded="true" onclick="togglePanel(this)">
+        <span class="panel-icon mar">⚖</span>
+        <span class="panel-title">Marco normativo</span>
+        <span class="panel-badge" id="badgeMarco">—</span>
+        <span class="panel-chevron" aria-hidden="true">▼</span>
+      </button>
+      <div class="panel-content vacio" id="panelMarco"></div>
     </div>
-    <div class="panel">
-      <h3>Relaciones relevantes</h3>
-      <div class="panel-content vacio" id="panelRelaciones">—</div>
+    <div class="panel" data-panel="relaciones">
+      <button type="button" class="panel-head" aria-expanded="true" onclick="togglePanel(this)">
+        <span class="panel-icon rel">↔</span>
+        <span class="panel-title">Relaciones relevantes</span>
+        <span class="panel-badge" id="badgeRelaciones">—</span>
+        <span class="panel-chevron" aria-hidden="true">▼</span>
+      </button>
+      <div class="panel-content vacio" id="panelRelaciones"></div>
     </div>
   </section>
   </div>
@@ -870,11 +1056,31 @@
       return String(s || '').trim().toLowerCase().replace(/_/g, ' ').replace(/í/g, 'i').replace(/ó/g, 'o');
     }
 
+    function sembrarPosicionesDispersas(nodes) {
+      var pos = {};
+      var n = nodes.length;
+      if (!n) return pos;
+      var radio = Math.max(1200, Math.sqrt(n) * 42);
+      nodes.forEach(function(node, i) {
+        var angulo = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+        var r = radio * (0.25 + 0.75 * Math.sqrt(Math.random()));
+        pos[node.id] = { x: Math.cos(angulo) * r, y: Math.sin(angulo) * r };
+      });
+      return pos;
+    }
+
+    function necesitaLayoutDisperso(nodeCount, opts) {
+      return !!(opts && (opts.fullGraph || opts.redispersar || opts.dispersar)) || nodeCount > LARGE_GRAPH_NODES;
+    }
+
     function prepararDatos(raw, posiciones, opts) {
       opts = opts || {};
       var pos = posiciones || {};
       var nodeCount = (raw.nodes || []).length;
-      var lite = !!opts.lite || esGrafoGrande(nodeCount);
+      var lite = !!opts.lite || esGrafoGrande(nodeCount) || necesitaLayoutDisperso(nodeCount, opts);
+      if (opts.dispersar && nodeCount > LARGE_GRAPH_NODES) {
+        pos = sembrarPosicionesDispersas(raw.nodes || []);
+      }
       const nodes = new vis.DataSet(
         (raw.nodes || []).map(n => {
           var estilo = estiloNodoPorEscala(lite ? nodeCount : (raw.nodes || []).length, n.group);
@@ -950,37 +1156,38 @@
       if (nodeCount <= 40) return 120;
       if (nodeCount <= 150) return 100;
       if (nodeCount <= 500) return 80;
-      if (nodeCount <= 1200) return 120;
-      if (nodeCount <= 2500) return 220;
-      return 280;
+      if (nodeCount <= 1200) return 140;
+      if (nodeCount <= 2500) return 280;
+      return 340;
     }
 
     function tiempoLayoutMs(nodeCount, iterations) {
       if (nodeCount > FULL_GRAPH_NODES) {
-        return Math.min(60000, 3000 + iterations * 150);
+        return Math.min(90000, 4000 + iterations * 180);
       }
       if (nodeCount > LARGE_GRAPH_NODES) {
-        return Math.min(30000, 1500 + iterations * 80);
+        return Math.min(45000, 2000 + iterations * 100);
       }
       return Math.min(12000, 80 + iterations * 40);
     }
 
     function opcionesFisicaLayout(nodeCount, iterations) {
       if (nodeCount > LARGE_GRAPH_NODES) {
+        var escala = Math.sqrt(nodeCount / 500);
         return {
           enabled: true,
           barnesHut: {
-            gravitationalConstant: nodeCount > FULL_GRAPH_NODES ? -12000 : -6000,
-            centralGravity: 0.15,
-            springLength: nodeCount > FULL_GRAPH_NODES ? 60 : 90,
-            springConstant: 0.018,
-            damping: 0.92,
-            avoidOverlap: 0.05
+            gravitationalConstant: nodeCount > FULL_GRAPH_NODES ? -45000 : -15000,
+            centralGravity: 0.008,
+            springLength: Math.min(220, 80 + escala * 35),
+            springConstant: 0.008,
+            damping: 0.82,
+            avoidOverlap: 0.35
           },
           solver: 'barnesHut',
           stabilization: { enabled: true, iterations: iterations, fit: false },
-          maxVelocity: 80,
-          minVelocity: 0.1
+          maxVelocity: 120,
+          minVelocity: 0.05
         };
       }
       return {
@@ -1055,6 +1262,34 @@
         if (token !== layoutToken) return;
         if (progresoTimer) clearInterval(progresoTimer);
         network.stopSimulation();
+        if (nodeCount > FULL_GRAPH_NODES) {
+          network.setOptions({
+            physics: {
+              enabled: true,
+              barnesHut: {
+                gravitationalConstant: -20000,
+                centralGravity: 0.003,
+                springLength: Math.min(260, 100 + Math.sqrt(nodeCount) * 3),
+                springConstant: 0.006,
+                damping: 0.88,
+                avoidOverlap: 0.4
+              },
+              solver: 'barnesHut',
+              stabilization: { enabled: true, iterations: 80, fit: false },
+              maxVelocity: 60,
+              minVelocity: 0.05
+            }
+          });
+          network.once('stabilized', function() {
+            if (token !== layoutToken) return;
+            network.stopSimulation();
+            ajustarVista(animatedView);
+            activarFlotacion(nodeCount);
+            if (meta.onComplete) meta.onComplete();
+          });
+          network.stabilize(80);
+          return;
+        }
         ajustarVista(animatedView);
         activarFlotacion(nodeCount);
         if (meta.onComplete) meta.onComplete();
@@ -1150,12 +1385,40 @@
           return ids.has(e.from) && ids.has(e.to);
         });
       }
-      var posiciones = network.getPositions();
-      var prepared = prepararDatos({ nodes: nodes, edges: edges }, posiciones);
+      var posiciones = null;
+      var usarLite = nodes.length > LARGE_GRAPH_NODES || modoRedCompleta;
+      var redispersar = (tipo === 'todos' && nodes.length > LARGE_GRAPH_NODES);
+      if (redispersar) {
+        actualizarInfoLayout('Organizando ' + nodes.length + ' nodos · ' + edges.length + ' relaciones...');
+      }
+      if (!redispersar && tipo !== 'todos') {
+        posiciones = network.getPositions();
+      }
+      var prepared = prepararDatos(
+        { nodes: nodes, edges: edges },
+        posiciones,
+        { lite: usarLite, dispersar: redispersar }
+      );
+      var dibujarOpts = {
+        animatedView: false,
+        preserveView: !redispersar && nodes.length <= LARGE_GRAPH_NODES
+      };
+      if (redispersar || modoRedCompleta) {
+        dibujarOpts.fullGraph = true;
+        dibujarOpts.layoutMeta = {
+          label: 'Mostrando ' + nodes.length + ' nodos · ' + edges.length + ' relaciones',
+          onComplete: function() {
+            var info = document.getElementById('grafoInfo');
+            if (info) {
+              info.textContent = nodes.length + ' nodos · ' + edges.length + ' relaciones — usa zoom o «Centrar»';
+            }
+          }
+        };
+      }
       dibujar(
         prepared.nodes.get().map(function(n) { return Object.assign({}, n); }),
         prepared.edges.get().map(function(e) { return Object.assign({}, e); }),
-        { preserveView: true, animatedView: false }
+        dibujarOpts
       );
     }
 
@@ -1338,6 +1601,122 @@
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
     }
 
+    function renderEstadoVacio(icono, titulo, hint) {
+      return '<div class="estado-vacio">' +
+        '<span class="estado-vacio-icon">' + icono + '</span>' +
+        '<p class="estado-vacio-titulo">' + esc(titulo) + '</p>' +
+        '<p class="estado-vacio-hint">' + esc(hint) + '</p></div>';
+    }
+
+    function renderSkeleton() {
+      return '<div class="skeleton" aria-busy="true">' +
+        '<div class="skeleton-line w80"></div>' +
+        '<div class="skeleton-line w60"></div>' +
+        '<div class="skeleton-line w40"></div>' +
+        '<div class="skeleton-line w80"></div></div>';
+    }
+
+    function setPanelBadge(id, texto, activo) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = texto;
+      el.classList.toggle('activo', !!activo);
+    }
+
+    function togglePanel(btn) {
+      var panel = btn.closest('.panel');
+      if (!panel) return;
+      var colapsado = panel.classList.toggle('colapsado');
+      btn.setAttribute('aria-expanded', colapsado ? 'false' : 'true');
+    }
+
+    function initPanelesVacios() {
+      document.getElementById('panelExplicacion').innerHTML = renderEstadoVacio(
+        '§', 'Sin explicación aún',
+        'Escribe una consulta o elige un tema del listado de derechos.'
+      );
+      document.getElementById('panelArgumentacion').innerHTML = renderEstadoVacio(
+        '¶', 'Sin argumentación',
+        'Aquí verás hallazgos, violaciones y elementos del grafo que sustentan la respuesta.'
+      );
+      document.getElementById('panelMarco').innerHTML = renderEstadoVacio(
+        '⚖', 'Sin marco normativo',
+        'Tratados, derechos y organismos vinculados aparecerán tras consultar.'
+      );
+      document.getElementById('panelRelaciones').innerHTML = renderEstadoVacio(
+        '↔', 'Sin relaciones',
+        'Las conexiones entre entidades del grafo impactado se listarán aquí.'
+      );
+      setPanelBadge('badgeExplicacion', '—', false);
+      setPanelBadge('badgeArgumentacion', '—', false);
+      setPanelBadge('badgeMarco', '—', false);
+      setPanelBadge('badgeRelaciones', '—', false);
+    }
+
+    function renderArgumentacion(texto, structured) {
+      if (!texto && !structured) {
+        return renderEstadoVacio('¶', 'Sin argumentación', 'No hay datos para mostrar.');
+      }
+
+      var html = '';
+      var bloques = [];
+      var violaciones = (structured && structured.violaciones) || [];
+      var tratados = (structured && structured.tratados) || [];
+
+      if (violaciones.length) {
+        var itemsV = violaciones.map(function(v) {
+          var t = String(v.titulo || '').trim();
+          var a = String(v.analisis || '').trim();
+          return esc(t + (a ? ': ' + a : ''));
+        });
+        bloques.push({ titulo: 'Presuntas violaciones', items: itemsV });
+      }
+
+      if (tratados.length) {
+        var itemsT = tratados.map(function(t) {
+          return esc(String(t.instrumento || '') + ': ' + String(t.articulos_clave || ''));
+        });
+        bloques.push({ titulo: 'Tratados aplicables', items: itemsT });
+      }
+
+      if (texto) {
+        var lineas = String(texto).split('\n');
+        var seccionActual = 'Elementos del grafo';
+        var itemsSeccion = [];
+        lineas.forEach(function(linea) {
+          var l = linea.trim();
+          if (!l) return;
+          if (l.endsWith(':') && !l.startsWith('•') && l.length < 80) {
+            if (itemsSeccion.length) {
+              bloques.push({ titulo: seccionActual, items: itemsSeccion.slice() });
+              itemsSeccion = [];
+            }
+            seccionActual = l.replace(/:$/, '');
+            return;
+          }
+          if (l.startsWith('•')) {
+            itemsSeccion.push(esc(l.replace(/^•\s*/, '')));
+          } else if (l.indexOf('Limitaciones:') === 0 || l.indexOf('Nivel de confianza:') === 0) {
+            return; // omitir metadatos internos
+          } else if (itemsSeccion.length === 0 && bloques.length === 0) {
+            itemsSeccion.push(esc(l));
+          }
+        });
+        if (itemsSeccion.length) {
+          bloques.push({ titulo: seccionActual, items: itemsSeccion });
+        }
+      }
+
+      bloques.forEach(function(b) {
+        if (!b.items.length) return;
+        html += '<div class="argumentacion-block"><h6>' + esc(b.titulo) + '</h6><ul>';
+        b.items.forEach(function(it) { html += '<li>' + it + '</li>'; });
+        html += '</ul></div>';
+      });
+
+      return html || renderEstadoVacio('¶', 'Sin argumentación', 'No hay datos para mostrar.');
+    }
+
     function renderRespuestaEstructurada(structured, fallbackText) {
       if (!structured || typeof structured !== 'object') {
         const txt = limpiarTextoExplicacion(fallbackText || '');
@@ -1348,8 +1727,6 @@
       const violaciones = structured.violaciones || [];
       const tratados = structured.tratados || [];
       const conclusion = limpiarTextoExplicacion(structured.conclusion || '');
-      const limitaciones = structured.limitaciones || '';
-      const confianza = structured.confianza || '';
 
       let html = '<div class="analisis-juridico">';
 
@@ -1390,14 +1767,6 @@
         html += '<p class="conclusion">' + esc(conclusion) + '</p>';
       }
 
-      if (limitaciones) {
-        html += '<p class="limitaciones"><strong>Limitaciones:</strong> ' + esc(limitaciones) + '</p>';
-      }
-
-      if (confianza) {
-        html += '<p class="meta-confianza">Nivel de confianza: ' + esc(confianza) + '</p>';
-      }
-
       html += '</div>';
 
       if (!intro && !violaciones.length && !tratados.length) {
@@ -1409,7 +1778,9 @@
     }
 
     function renderMarcoNormativo(nodes) {
-      if (!nodes || !nodes.length) return '<span class="vacio">No hay datos.</span>';
+      if (!nodes || !nodes.length) {
+        return renderEstadoVacio('⚖', 'Sin marco normativo', 'No hay entidades del grafo vinculadas a esta consulta.');
+      }
       const byType = {};
       nodes.forEach(n => {
         const g = n.group || 'Otro';
@@ -1421,18 +1792,21 @@
       orden.forEach(tipo => {
         if (!byType[tipo]) return;
         const color = colorPorTipo(tipo);
-        html += '<div class="marco-tipo"><strong>' + esc(tipo) + '</strong>';
+        html += '<div class="marco-tipo"><div class="marco-tipo-head"><strong>' + esc(tipo) + '</strong>';
+        html += '<span class="marco-tipo-count">' + byType[tipo].length + '</span></div>';
         byType[tipo].slice(0, 15).forEach(n => {
           html += '<div class="item"><span style="background:' + color + '"></span><span>' + esc(n.label || n.id) + '</span></div>';
         });
         if (byType[tipo].length > 15) html += '<div class="item"><span></span><span>… y ' + (byType[tipo].length - 15) + ' más</span></div>';
         html += '</div>';
       });
-      return html || '<span class="vacio">No hay datos.</span>';
+      return html || renderEstadoVacio('⚖', 'Sin marco normativo', 'No hay entidades clasificables.');
     }
 
     function renderRelacionesRelevantes(edges, nodes) {
-      if (!edges || !edges.length) return '<span class="vacio">No hay relaciones.</span>';
+      if (!edges || !edges.length) {
+        return renderEstadoVacio('↔', 'Sin relaciones', 'No se encontraron vínculos entre entidades para esta consulta.');
+      }
       const nodeCount = (nodes && nodes.length) || 0;
       const edgeCount = edges.length;
       const byType = {};
@@ -1458,14 +1832,11 @@
     function nuevaConsulta() {
       document.getElementById('queryInput').value = '';
       document.getElementById('queryInput').focus();
-      document.getElementById('panelExplicacion').innerHTML = '—';
       document.getElementById('panelExplicacion').classList.add('vacio');
-      document.getElementById('panelArgumentacion').innerHTML = '—';
       document.getElementById('panelArgumentacion').classList.add('vacio');
-      document.getElementById('panelMarco').innerHTML = '—';
       document.getElementById('panelMarco').classList.add('vacio');
-      document.getElementById('panelRelaciones').innerHTML = '—';
       document.getElementById('panelRelaciones').classList.add('vacio');
+      initPanelesVacios();
       document.getElementById('grafoInfo').textContent = 'Realiza una consulta o pulsa «Ver red completa».';
       modoRedCompleta = false;
       fullRawNodes = [];
@@ -1494,8 +1865,11 @@
 
       btn.disabled = true;
       panelExp.classList.remove('vacio', 'error');
-      panelExp.textContent = 'Consultando...';
+      panelExp.innerHTML = renderSkeleton();
       panelExp.classList.add('loading');
+      panelArg.innerHTML = renderSkeleton();
+      panelMarco.innerHTML = renderSkeleton();
+      panelRel.innerHTML = renderSkeleton();
 
       try {
         const res = await fetch(`${API}/api/query`, {
@@ -1516,20 +1890,12 @@
           textoRespuesta = json.response.respuesta ?? json.response.introduccion ?? json.response.answer ?? '';
         }
         const htmlRespuesta = renderRespuestaEstructurada(json.structured, textoRespuesta);
-        let htmlFinal = htmlRespuesta;
-        if (typeof json.response === 'string' && json.response.includes('no constituye asesoría jurídica')) {
-          const idx = json.response.indexOf('—');
-          if (idx >= 0) {
-            htmlFinal += '<p class="meta-confianza" style="margin-top:1rem;font-style:italic">' +
-              esc(json.response.slice(idx + 1).trim()) + '</p>';
-          }
-        }
         panelExp.classList.remove('loading', 'vacio');
-        panelExp.innerHTML = htmlFinal || '<span class="vacio">Sin explicación.</span>';
+        panelExp.innerHTML = htmlRespuesta || renderEstadoVacio('§', 'Sin explicación', 'No se generó contenido para esta consulta.');
 
         const arg = String(json.argumentacion || '');
         panelArg.classList.remove('vacio');
-        panelArg.innerHTML = arg ? esc(arg) : '<span class="vacio">No hay argumentación.</span>';
+        panelArg.innerHTML = renderArgumentacion(arg, json.structured);
 
         const imp = json.impacted || {};
         const rawNodes = imp.nodes || [];
@@ -1546,6 +1912,13 @@
         panelRel.classList.remove('vacio');
         panelRel.innerHTML = renderRelacionesRelevantes(rawEdges, rawNodes);
 
+        var nViol = (json.structured && json.structured.violaciones) ? json.structured.violaciones.length : 0;
+        var nTrat = (json.structured && json.structured.tratados) ? json.structured.tratados.length : 0;
+        setPanelBadge('badgeExplicacion', nViol ? nViol + ' viol.' : 'OK', true);
+        setPanelBadge('badgeArgumentacion', (nViol + nTrat) ? String(nViol + nTrat) : '—', !!(arg || nViol));
+        setPanelBadge('badgeMarco', rawNodes.length ? String(rawNodes.length) : '—', rawNodes.length > 0);
+        setPanelBadge('badgeRelaciones', rawEdges.length ? String(rawEdges.length) : '—', rawEdges.length > 0);
+
         const { nodes, edges } = prepararDatos({ nodes: rawNodes, edges: rawEdges });
         dibujar(
           nodes.get().map(n => ({ ...n })),
@@ -1553,12 +1926,12 @@
         );
         info.textContent = rawNodes.length + ' nodos · ' + rawEdges.length + ' relaciones';
       } catch (err) {
-        panelExp.textContent = 'Error: ' + err.message;
+        panelExp.innerHTML = '<span class="error">Error: ' + esc(err.message) + '</span>';
         panelExp.classList.add('error');
         panelExp.classList.remove('loading');
-        panelArg.innerHTML = '—';
-        panelMarco.innerHTML = '—';
-        panelRel.innerHTML = '—';
+        panelArg.innerHTML = renderEstadoVacio('¶', 'Error en la consulta', 'Intenta de nuevo o reformula la pregunta.');
+        panelMarco.innerHTML = renderEstadoVacio('⚖', 'Sin datos', '—');
+        panelRel.innerHTML = renderEstadoVacio('↔', 'Sin datos', '—');
         info.textContent = '—';
       } finally {
         btn.disabled = false;
@@ -1584,7 +1957,7 @@
         fullRawEdges = rawEdges;
         modoRedCompleta = true;
         info.textContent = 'Organizando ' + rawNodes.length + ' nodos · ' + rawEdges.length + ' relaciones...';
-        var prepared = prepararDatos({ nodes: rawNodes, edges: rawEdges }, null, { lite: true });
+        var prepared = prepararDatos({ nodes: rawNodes, edges: rawEdges }, null, { lite: true, dispersar: true });
         dibujar(
           prepared.nodes.get().map(n => ({ ...n })),
           prepared.edges.get().map(e => ({ ...e })),
@@ -1635,6 +2008,7 @@
         verGrafoCompleto();
         return;
       }
+      initPanelesVacios();
       var input = document.getElementById('queryInput');
       if (input) {
         setTimeout(function() { input.focus(); }, 350);

@@ -269,13 +269,6 @@ def _generar_argumentacion(nodes: list, edges: list, structured: dict | None = N
                 arts = t.get("articulos_clave", "")
                 lineas.append(f"  • {inst}: {arts}")
 
-        limitaciones = structured.get("limitaciones")
-        if limitaciones:
-            lineas.append(f"\nLimitaciones: {limitaciones}")
-
-        confianza = structured.get("confianza")
-        if confianza:
-            lineas.append(f"\nNivel de confianza: {confianza}")
 
     if not nodes:
         if lineas:

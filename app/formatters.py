@@ -55,9 +55,4 @@ def format_legal_response(structured: dict[str, Any] | None) -> str:
     if conclusion:
         lineas.append(conclusion)
 
-    limitaciones = str(structured.get("limitaciones") or "").strip()
-    if limitaciones:
-        lineas.append("")
-        lineas.append(f"Limitaciones: {limitaciones}")
-
     return "\n".join(lineas).strip()

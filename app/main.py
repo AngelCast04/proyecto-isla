@@ -247,43 +247,14 @@ def consultar(request: QueryRequest):
 
 
 def _generar_argumentacion(nodes: list, edges: list, structured: dict | None = None) -> str:
-    """Genera texto de argumentación combinando hallazgos del LLM y el grafo impactado."""
-    lineas: list[str] = []
-
-    if structured:
-        violaciones = structured.get("violaciones") or []
-        if violaciones:
-            lineas.append("Presuntas violaciones identificadas en el análisis:\n")
-            for v in violaciones:
-                titulo = v.get("titulo", "")
-                analisis = v.get("analisis", "")
-                fuentes = v.get("fuentes") or []
-                refs = f" [{', '.join(str(f) for f in fuentes)}]" if fuentes else ""
-                lineas.append(f"  • {titulo} {analisis}{refs}".strip())
-
-        tratados = structured.get("tratados") or []
-        if tratados:
-            lineas.append("\nTratados internacionales aplicables:")
-            for t in tratados:
-                inst = t.get("instrumento", "")
-                arts = t.get("articulos_clave", "")
-                lineas.append(f"  • {inst}: {arts}")
-
-
+    """Resume elementos del grafo impactado (sin repetir el análisis jurídico del LLM)."""
+    _ = structured  # el análisis va en Explicación; aquí solo el grafo
     if not nodes:
-        if lineas:
-            return "\n".join(lineas).strip()
         return "No se encontraron elementos en el grafo para esta consulta."
 
-    if lineas:
-        lineas.append(
-            "\n\nElementos del grafo impactado relevantes para orientar la labor en derechos humanos:\n"
-        )
-    else:
-        lineas.append(
-            "A partir del análisis del grafo impactado, se identifican los siguientes elementos "
-            "relevantes para orientar la labor en derechos humanos:\n"
-        )
+    lineas = [
+        "Elementos del grafo impactado relevantes para orientar la labor en derechos humanos:\n"
+    ]
 
     orden_tipos = [
         ("Tratado", "Tratados"),
@@ -313,14 +284,6 @@ def _generar_argumentacion(nodes: list, edges: list, structured: dict | None = N
                     lineas.append(f"  • {nombre} — {desc}")
                 else:
                     lineas.append(f"  • {nombre}")
-
-    if edges:
-        lineas.append("\nRelaciones relevantes:")
-        for e in edges[:15]:  # Limitar a 15 relaciones
-            r = f"  • {e.get('from', '')} ↔ {e.get('to', '')}"
-            if e.get("title"):
-                r += f": {str(e['title'])[:80]}..."
-            lineas.append(r)
 
     return "\n".join(lineas).strip()
 

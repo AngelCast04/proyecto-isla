@@ -323,23 +323,24 @@
       font-style: italic;
     }
 
-    /* Contenedor principal: grafo | paneles */
+    /* Contenedor principal: grafo arriba | paneles en fila abajo */
     .main-split {
       flex: 1;
       display: flex;
+      flex-direction: column;
       min-height: 0;
       overflow: hidden;
     }
 
-    /* Área del grafo: columna izquierda */
+    /* Área del grafo */
     .grafo-wrap {
-      flex: 1.2;
+      flex: 1;
       min-width: 0;
       min-height: 0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border-right: 1px solid #27272a;
+      border-bottom: 1px solid #27272a;
     }
     /* Mismo ancho y alto para degradado y lienzo del grafo */
     .grafo-lienzo {
@@ -382,47 +383,75 @@
     }
     .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
 
-    /* Panel lateral: explicaciones y datos */
+    /* Paneles: 4 columnas horizontales con scroll independiente */
+    .paneles-v-resizer {
+      flex: 0 0 7px;
+      cursor: row-resize;
+      background: #1f1f23;
+      border-top: 1px solid #27272a;
+      border-bottom: 1px solid #27272a;
+      position: relative;
+      z-index: 3;
+      touch-action: none;
+    }
+    .paneles-v-resizer::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 2.5rem;
+      height: 3px;
+      border-radius: 999px;
+      background: #52525b;
+      transition: background 0.15s;
+    }
+    .paneles-v-resizer:hover::after,
+    .paneles-v-resizer.active::after {
+      background: #818cf8;
+    }
     .paneles {
-      flex: 0.85;
-      min-width: 300px;
-      max-width: 420px;
+      flex: 0 0 auto;
+      height: var(--paneles-height, min(38vh, 340px));
+      min-height: 120px;
+      max-height: 78vh;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       overflow: hidden;
       background: #18181b;
     }
     @media (max-width: 900px) {
-      .main-split {
-        flex-direction: column;
-        overflow: auto;
-      }
-      .grafo-wrap {
-        flex: none;
-        min-height: 50vh;
-        border-right: none;
-        border-bottom: 1px solid #27272a;
-      }
       .paneles {
-        flex: 1;
-        min-width: 0;
-        max-width: none;
-        min-height: 40vh;
+        height: auto;
+        min-height: 220px;
+        max-height: 45vh;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      .panel {
+        min-width: 200px;
+        flex: 0 0 200px;
+      }
+    }
+    @media (max-width: 900px) {
+      .grafo-wrap {
+        min-height: 45vh;
       }
     }
     .panel {
       background: #18181b;
-      border-bottom: 1px solid #27272a;
+      border-right: 1px solid #27272a;
       display: flex;
       flex-direction: column;
+      flex: 1;
+      min-width: 0;
       min-height: 0;
       overflow: hidden;
     }
-    .panel:nth-child(1) { flex: 2.4; }
-    .panel:nth-child(2) { flex: 1.5; }
-    .panel:nth-child(3) { flex: 1.2; }
-    .panel:nth-child(4) { flex: 1.2; }
-    .panel:last-child { border-bottom: none; }
+    .panel:last-child { border-right: none; }
     .panel-head {
       display: flex;
       align-items: center;
@@ -456,12 +485,13 @@
     .panel-head .panel-icon.mar { background: rgba(139,92,246,0.18); color: #c4b5fd; }
     .panel-head .panel-icon.rel { background: rgba(6,182,212,0.15); color: #67e8f9; }
     .panel-head .panel-title {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 600;
       color: #d4d4d8;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       flex: 1;
+      line-height: 1.2;
     }
     .panel-head .panel-badge {
       font-size: 0.65rem;
@@ -490,10 +520,13 @@
     }
     .panel-content {
       flex: 1;
-      padding: 0.75rem 1rem;
+      min-height: 0;
+      padding: 0.65rem 0.75rem;
       overflow-y: auto;
-      font-size: 0.85rem;
+      overflow-x: hidden;
+      font-size: 0.82rem;
       line-height: 1.5;
+      -webkit-overflow-scrolling: touch;
     }
     .panel-content.vacio { color: #71717a; font-style: italic; }
     .panel-content .vacio { color: #71717a; font-style: italic; }
@@ -637,9 +670,22 @@
       border-bottom: 1px solid #27272a;
     }
     .relacion-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-    .relacion-item .par { font-weight: 500; color: #e4e4e7; }
-    .relacion-item .tag { display: inline-block; margin-top: 0.25rem; padding: 0.15rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; background: #27272a; color: #a1a1aa; }
-    .relacion-item .stats { font-size: 0.75rem; color: #71717a; margin-top: 0.25rem; }
+    .relacion-item .par { font-weight: 500; color: #e4e4e7; font-size: 0.8rem; line-height: 1.4; word-break: break-word; }
+    .relacion-item .relacion-desc {
+      margin-top: 0.35rem;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #a1a1aa;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .relaciones-resumen {
+      font-size: 0.75rem;
+      color: #71717a;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #27272a;
+    }
 
     .loading { color: #f59e0b; }
     .error { color: #ef4444; }
@@ -732,8 +778,13 @@
       .header-buttons, .leyenda-bar .item, .leyenda-guia, .listado-derechos, .grafo-meta, .btn { display: none !important; }
       .header-actions input { border: 1px solid #ccc; }
       .main-split { flex-direction: column; }
-      .grafo-wrap { min-height: 60vh; border-right: none; }
-      .paneles { max-width: none; }
+      .grafo-wrap { min-height: 60vh; }
+      .paneles {
+        flex-direction: row;
+        height: auto;
+        max-height: none;
+      }
+      .panel { break-inside: avoid; }
       .grafo-bg { opacity: 0.5; }
     }
   </style>
@@ -849,7 +900,9 @@
     </div>
   </div>
 
-  <section class="paneles">
+  <div class="paneles-v-resizer" id="panelesVResizer" title="Arrastra para cambiar la altura de los paneles" role="separator" aria-orientation="horizontal" aria-label="Redimensionar altura de paneles"></div>
+
+  <section class="paneles" id="panelesSection">
     <div class="panel" data-panel="explicacion">
       <button type="button" class="panel-head" aria-expanded="true" onclick="togglePanel(this)">
         <span class="panel-icon exp">§</span>
@@ -1054,6 +1107,38 @@
 
     function normalizarTipoParaFiltro(s) {
       return String(s || '').trim().toLowerCase().replace(/_/g, ' ').replace(/í/g, 'i').replace(/ó/g, 'o');
+    }
+
+    const MAPA_TIPO_CANONICO = {
+      tratado: 'Tratado',
+      derecho: 'Derecho',
+      resolucion: 'Resolución',
+      organismo: 'Organismo',
+      mecanismo: 'Mecanismo',
+      poblacion: 'Población',
+      'concepto juridico': 'Concepto_Jurídico',
+      organo: 'Órgano',
+      pais: 'País',
+      otro: 'Otro'
+    };
+    const ORDEN_TIPOS_MARCO = [
+      'Tratado', 'Derecho', 'Resolución', 'Organismo', 'Mecanismo',
+      'Población', 'Concepto_Jurídico', 'Órgano', 'País', 'Otro'
+    ];
+
+    function tipoCanonico(group) {
+      const n = normalizarTipoParaFiltro(group);
+      return MAPA_TIPO_CANONICO[n] || String(group || 'Otro').trim() || 'Otro';
+    }
+
+    function agruparNodosPorTipo(nodes) {
+      const byType = {};
+      (nodes || []).forEach(function(n) {
+        const canon = tipoCanonico(n.group);
+        if (!byType[canon]) byType[canon] = [];
+        byType[canon].push(n);
+      });
+      return byType;
     }
 
     function sembrarPosicionesDispersas(nodes) {
@@ -1630,14 +1715,95 @@
       btn.setAttribute('aria-expanded', colapsado ? 'false' : 'true');
     }
 
+    var PANELES_LAYOUT_KEY = 'consultaPanelesLayout';
+
+    function notificarCambioLayoutPaneles() {
+      if (!network) return;
+      clearTimeout(window._panelesLayoutTimer);
+      window._panelesLayoutTimer = setTimeout(function() {
+        network.redraw();
+      }, 60);
+    }
+
+    function guardarAlturaPaneles(alturaPx) {
+      try {
+        localStorage.setItem(PANELES_LAYOUT_KEY, JSON.stringify({ height: alturaPx }));
+      } catch (e) { /* ignore */ }
+    }
+
+    function cargarLayoutPaneles() {
+      try {
+        var raw = localStorage.getItem(PANELES_LAYOUT_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function initRedimensionPaneles() {
+      var panelesSection = document.getElementById('panelesSection');
+      var vResizer = document.getElementById('panelesVResizer');
+      if (!panelesSection || !vResizer) return;
+
+      var saved = cargarLayoutPaneles();
+      if (saved && saved.height) {
+        panelesSection.style.setProperty('--paneles-height', saved.height + 'px');
+        panelesSection.style.height = saved.height + 'px';
+      }
+
+      function persistirAltura() {
+        guardarAlturaPaneles(panelesSection.offsetHeight);
+      }
+
+      vResizer.addEventListener('pointerdown', function(e) {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+        vResizer.classList.add('active');
+        vResizer.setPointerCapture(e.pointerId);
+        var startY = e.clientY;
+        var startH = panelesSection.offsetHeight;
+        var minH = 120;
+        var maxH = Math.round(window.innerHeight * 0.78);
+
+        function onMove(ev) {
+          var delta = startY - ev.clientY;
+          var newH = Math.min(maxH, Math.max(minH, startH + delta));
+          panelesSection.style.height = newH + 'px';
+          panelesSection.style.setProperty('--paneles-height', newH + 'px');
+          notificarCambioLayoutPaneles();
+        }
+
+        function onUp() {
+          vResizer.classList.remove('active');
+          vResizer.removeEventListener('pointermove', onMove);
+          vResizer.removeEventListener('pointerup', onUp);
+          vResizer.removeEventListener('pointercancel', onUp);
+          persistirAltura();
+          notificarCambioLayoutPaneles();
+        }
+
+        vResizer.addEventListener('pointermove', onMove);
+        vResizer.addEventListener('pointerup', onUp);
+        vResizer.addEventListener('pointercancel', onUp);
+      });
+
+      vResizer.addEventListener('dblclick', function() {
+        var defH = Math.min(Math.round(window.innerHeight * 0.38), 340);
+        panelesSection.style.height = defH + 'px';
+        panelesSection.style.setProperty('--paneles-height', defH + 'px');
+        persistirAltura();
+        notificarCambioLayoutPaneles();
+      });
+    }
+
     function initPanelesVacios() {
       document.getElementById('panelExplicacion').innerHTML = renderEstadoVacio(
         '§', 'Sin explicación aún',
         'Escribe una consulta o elige un tema del listado de derechos.'
       );
       document.getElementById('panelArgumentacion').innerHTML = renderEstadoVacio(
-        '¶', 'Sin argumentación',
-        'Aquí verás hallazgos, violaciones y elementos del grafo que sustentan la respuesta.'
+        '¶', 'Sin elementos del grafo',
+        'Aquí se listan entidades del subgrafo impactado por la consulta (sin repetir el análisis jurídico).'
       );
       document.getElementById('panelMarco').innerHTML = renderEstadoVacio(
         '⚖', 'Sin marco normativo',
@@ -1653,58 +1819,36 @@
       setPanelBadge('badgeRelaciones', '—', false);
     }
 
-    function renderArgumentacion(texto, structured) {
-      if (!texto && !structured) {
-        return renderEstadoVacio('¶', 'Sin argumentación', 'No hay datos para mostrar.');
+    function renderArgumentacion(texto) {
+      if (!texto || !String(texto).trim()) {
+        return renderEstadoVacio('¶', 'Sin elementos del grafo', 'No hay entidades en el subgrafo impactado.');
       }
 
       var html = '';
       var bloques = [];
-      var violaciones = (structured && structured.violaciones) || [];
-      var tratados = (structured && structured.tratados) || [];
+      var lineas = String(texto).split('\n');
+      var seccionActual = 'Resumen';
+      var itemsSeccion = [];
 
-      if (violaciones.length) {
-        var itemsV = violaciones.map(function(v) {
-          var t = String(v.titulo || '').trim();
-          var a = String(v.analisis || '').trim();
-          return esc(t + (a ? ': ' + a : ''));
-        });
-        bloques.push({ titulo: 'Presuntas violaciones', items: itemsV });
-      }
-
-      if (tratados.length) {
-        var itemsT = tratados.map(function(t) {
-          return esc(String(t.instrumento || '') + ': ' + String(t.articulos_clave || ''));
-        });
-        bloques.push({ titulo: 'Tratados aplicables', items: itemsT });
-      }
-
-      if (texto) {
-        var lineas = String(texto).split('\n');
-        var seccionActual = 'Elementos del grafo';
-        var itemsSeccion = [];
-        lineas.forEach(function(linea) {
-          var l = linea.trim();
-          if (!l) return;
-          if (l.endsWith(':') && !l.startsWith('•') && l.length < 80) {
-            if (itemsSeccion.length) {
-              bloques.push({ titulo: seccionActual, items: itemsSeccion.slice() });
-              itemsSeccion = [];
-            }
-            seccionActual = l.replace(/:$/, '');
-            return;
+      lineas.forEach(function(linea) {
+        var l = linea.trim();
+        if (!l) return;
+        if (l.endsWith(':') && !l.startsWith('•') && l.length < 100) {
+          if (itemsSeccion.length) {
+            bloques.push({ titulo: seccionActual, items: itemsSeccion.slice() });
+            itemsSeccion = [];
           }
-          if (l.startsWith('•')) {
-            itemsSeccion.push(esc(l.replace(/^•\s*/, '')));
-          } else if (l.indexOf('Limitaciones:') === 0 || l.indexOf('Nivel de confianza:') === 0) {
-            return; // omitir metadatos internos
-          } else if (itemsSeccion.length === 0 && bloques.length === 0) {
-            itemsSeccion.push(esc(l));
-          }
-        });
-        if (itemsSeccion.length) {
-          bloques.push({ titulo: seccionActual, items: itemsSeccion });
+          seccionActual = l.replace(/:$/, '');
+          return;
         }
+        if (l.startsWith('•')) {
+          itemsSeccion.push(esc(l.replace(/^•\s*/, '')));
+        } else if (itemsSeccion.length === 0 && bloques.length === 0) {
+          itemsSeccion.push(esc(l));
+        }
+      });
+      if (itemsSeccion.length) {
+        bloques.push({ titulo: seccionActual, items: itemsSeccion });
       }
 
       bloques.forEach(function(b) {
@@ -1714,7 +1858,7 @@
         html += '</ul></div>';
       });
 
-      return html || renderEstadoVacio('¶', 'Sin argumentación', 'No hay datos para mostrar.');
+      return html || renderEstadoVacio('¶', 'Sin elementos del grafo', 'No hay datos para mostrar.');
     }
 
     function renderRespuestaEstructurada(structured, fallbackText) {
@@ -1781,23 +1925,20 @@
       if (!nodes || !nodes.length) {
         return renderEstadoVacio('⚖', 'Sin marco normativo', 'No hay entidades del grafo vinculadas a esta consulta.');
       }
-      const byType = {};
-      nodes.forEach(n => {
-        const g = n.group || 'Otro';
-        if (!byType[g]) byType[g] = [];
-        byType[g].push(n);
+      const byType = agruparNodosPorTipo(nodes);
+      const orden = ORDEN_TIPOS_MARCO.slice();
+      Object.keys(byType).forEach(function(t) {
+        if (orden.indexOf(t) === -1) orden.push(t);
       });
-      const orden = ['Tratado', 'Derecho', 'Resolución', 'Organismo', 'Mecanismo', 'Población', 'Concepto_Jurídico', 'Órgano', 'País', 'Otro'];
       let html = '';
-      orden.forEach(tipo => {
+      orden.forEach(function(tipo) {
         if (!byType[tipo]) return;
         const color = colorPorTipo(tipo);
         html += '<div class="marco-tipo"><div class="marco-tipo-head"><strong>' + esc(tipo) + '</strong>';
         html += '<span class="marco-tipo-count">' + byType[tipo].length + '</span></div>';
-        byType[tipo].slice(0, 15).forEach(n => {
+        byType[tipo].forEach(function(n) {
           html += '<div class="item"><span style="background:' + color + '"></span><span>' + esc(n.label || n.id) + '</span></div>';
         });
-        if (byType[tipo].length > 15) html += '<div class="item"><span></span><span>… y ' + (byType[tipo].length - 15) + ' más</span></div>';
         html += '</div>';
       });
       return html || renderEstadoVacio('⚖', 'Sin marco normativo', 'No hay entidades clasificables.');
@@ -1809,23 +1950,17 @@
       }
       const nodeCount = (nodes && nodes.length) || 0;
       const edgeCount = edges.length;
-      const byType = {};
-      (nodes || []).forEach(n => {
-        const g = n.group || 'Otro';
-        byType[g] = (byType[g] || 0) + 1;
+      const byType = agruparNodosPorTipo(nodes || []);
+      const statsParts = [nodeCount + ' nodos', edgeCount + ' relaciones'];
+      if (byType['Tratado']) statsParts.push(byType['Tratado'].length + ' tratados');
+      if (byType['Derecho']) statsParts.push(byType['Derecho'].length + ' derechos');
+      let html = '<div class="relaciones-resumen">' + esc(statsParts.join(' · ')) + '</div>';
+      edges.forEach(function(e) {
+        const desc = e.title || e.label || '';
+        html += '<div class="relacion-item"><div class="par">' + esc(e.from || '') + ' → ' + esc(e.to || '') + '</div>';
+        if (desc) html += '<div class="relacion-desc">' + esc(String(desc)) + '</div>';
+        html += '</div>';
       });
-      const statsStr = nodeCount + ' nodos, ' + edgeCount + ' relaciones' +
-        (byType['Tratado'] ? ', ' + byType['Tratado'] + ' tratados' : '') +
-        (byType['Derecho'] ? ', ' + byType['Derecho'] + ' derechos' : '');
-      let html = '';
-      edges.slice(0, 12).forEach(e => {
-        const fromLabel = (e.from && e.from.length > 40) ? e.from.slice(0, 40) + '…' : (e.from || '');
-        const toLabel = (e.to && e.to.length > 40) ? e.to.slice(0, 40) + '…' : (e.to || '');
-        html += '<div class="relacion-item"><div class="par">' + esc(fromLabel) + ' → ' + esc(toLabel) + '</div>';
-        if (e.title) html += '<div class="tag">' + esc(String(e.title).slice(0, 60)) + '</div>';
-        html += '<div class="stats">' + esc(statsStr) + '</div></div>';
-      });
-      if (edges.length > 12) html += '<div class="relacion-item"><span class="vacio">… y ' + (edges.length - 12) + ' relaciones más</span></div>';
       return html;
     }
 
@@ -1895,7 +2030,7 @@
 
         const arg = String(json.argumentacion || '');
         panelArg.classList.remove('vacio');
-        panelArg.innerHTML = renderArgumentacion(arg, json.structured);
+        panelArg.innerHTML = renderArgumentacion(arg);
 
         const imp = json.impacted || {};
         const rawNodes = imp.nodes || [];
@@ -1913,9 +2048,8 @@
         panelRel.innerHTML = renderRelacionesRelevantes(rawEdges, rawNodes);
 
         var nViol = (json.structured && json.structured.violaciones) ? json.structured.violaciones.length : 0;
-        var nTrat = (json.structured && json.structured.tratados) ? json.structured.tratados.length : 0;
         setPanelBadge('badgeExplicacion', nViol ? nViol + ' viol.' : 'OK', true);
-        setPanelBadge('badgeArgumentacion', (nViol + nTrat) ? String(nViol + nTrat) : '—', !!(arg || nViol));
+        setPanelBadge('badgeArgumentacion', rawNodes.length ? String(rawNodes.length) : '—', rawNodes.length > 0);
         setPanelBadge('badgeMarco', rawNodes.length ? String(rawNodes.length) : '—', rawNodes.length > 0);
         setPanelBadge('badgeRelaciones', rawEdges.length ? String(rawEdges.length) : '—', rawEdges.length > 0);
 
@@ -1986,6 +2120,8 @@
         ajustarVista(false);
       }, 120);
     });
+
+    initRedimensionPaneles();
 
     (function initDesdeUrl() {
       var params = new URLSearchParams(window.location.search);

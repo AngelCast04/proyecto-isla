@@ -145,18 +145,24 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             raise e
 
     def query(self, query: str, params: Optional[QueryParam] = None, response_model = None) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
-        async def _query() -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
-            await self.state_manager.query_start()
-            try:
-                answer = await self.async_query(query, params, response_model)
-                return answer
-            except Exception as e:
-                logger.error(f"Error during query: {e}")
-                raise e
-            finally:
-                await self.state_manager.query_done()
+        """Wrapper síncrono para CLI/scripts. La API web debe usar aquery()."""
+        return get_event_loop().run_until_complete(self.aquery(query, params, response_model))
 
-        return get_event_loop().run_until_complete(_query())
+    async def aquery(
+        self,
+        query: str,
+        params: Optional[QueryParam] = None,
+        response_model=None,
+    ) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
+        """Consulta async con query_start/query_done (mismo event loop que uvicorn)."""
+        await self.state_manager.query_start()
+        try:
+            return await self.async_query(query, params, response_model)
+        except Exception as e:
+            logger.error(f"Error during query: {e}")
+            raise
+        finally:
+            await self.state_manager.query_done()
 
     async def async_query(
         self, query: Optional[str], params: Optional[QueryParam] = None, response_model = None

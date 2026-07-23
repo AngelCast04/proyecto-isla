@@ -122,6 +122,19 @@ def get_grag():
     return _grag
 
 
+@app.on_event("startup")
+async def warmup_grag():
+    """Crea GraphRAG/Semaphores en el event loop de uvicorn (evita bound to a different event loop)."""
+    if not os.getenv("OPENAI_API_KEY"):
+        return
+    try:
+        get_grag()
+        get_orchestrator()
+    except Exception:
+        # Sin grafo o sin key: el endpoint /api/query reportará el error al consultar
+        pass
+
+
 class QueryRequest(BaseModel):
     query: str
 
@@ -213,11 +226,11 @@ def get_grafo_completo():
 
 
 @app.post("/api/query")
-def consultar(request: QueryRequest):
+async def consultar(request: QueryRequest):
     """Ejecuta una consulta vía orquestador multi-agente con guardrails."""
     try:
         grag = get_grag()
-        ctx = get_orchestrator().execute(
+        ctx = await get_orchestrator().aexecute(
             grag,
             request.query,
             _generar_argumentacion,

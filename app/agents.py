@@ -72,10 +72,10 @@ class AnalystAgent:
     def __init__(self, working_dir: str) -> None:
         self.working_dir = working_dir
 
-    def run(self, grag: Any, ctx: AgentContext) -> AgentContext:
+    async def run(self, grag: Any, ctx: AgentContext) -> AgentContext:
         from fast_graphrag import QueryParam
 
-        respuesta = grag.query(
+        respuesta = await grag.aquery(
             ctx.query,
             params=QueryParam(with_references=True, structured=True),
         )
@@ -132,7 +132,7 @@ class QueryOrchestrator:
         self.verifier = VerifierAgent()
         self.argumentador = ArgumentadorAgent()
 
-    def execute(
+    async def aexecute(
         self,
         grag: Any,
         query: str,
@@ -142,7 +142,7 @@ class QueryOrchestrator:
         if ctx.blocked:
             return ctx
 
-        ctx = self.analyst.run(grag, ctx)
+        ctx = await self.analyst.run(grag, ctx)
         ctx = self.verifier.run(ctx)
         ctx = self.argumentador.run(ctx, generar_argumentacion_fn)
         return ctx

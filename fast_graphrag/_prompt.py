@@ -211,16 +211,19 @@ Responde ÚNICAMENTE con un objeto JSON válido según el esquema. Sin markdown 
    - **titulo**: categoría jurídica en estilo encabezado (termina en punto). Ej: "Trata de personas y trabajo forzado."
    - **analisis**: párrafo detallado que explica la aplicabilidad al caso con referencias [n] al final de oraciones clave.
 3. **tratados**: tabla lógica en JSON con instrumento, articulos_clave y observaciones (si hay en fuentes).
-4. **conclusion**: párrafo sobre convergencia de violaciones o vías de protección internacional.
-5. **razonamiento**: cadena de pensamiento interna (no se muestra al usuario).
-6. **confianza** y **limitaciones**: según evidencia disponible.
+4. **observaciones_resoluciones**: observaciones generales de comités, resoluciones, reportes e informes de relatorías u órganos que consten en las fuentes y apliquen a la consulta. Cada ítem tiene tipo, titulo, organismo, relevancia y fuentes.
+5. **conclusion**: párrafo sobre convergencia de violaciones o vías de protección internacional.
+6. **razonamiento**: cadena de pensamiento interna (no se muestra al usuario).
+7. **confianza** y **limitaciones**: según evidencia disponible.
 
 # REGLAS DE REDACCIÓN
 - Tono analítico y sistemático ("convergencia de violaciones", "marco de protección internacional").
 - Sin preámbulos conversacionales ("Claro", "Por supuesto").
 - Cada violación debe ser un párrafo autónomo con título descriptivo.
 - Los artículos deben listarse de forma precisa cuando consten en las fuentes.
-- No inventes tratados, artículos ni hechos que no estén en el contexto.
+- No inventes tratados, artículos, observaciones generales, resoluciones, reportes ni hechos que no estén en el contexto.
+- En observaciones_resoluciones usa tipo exactamente: "Observación general", "Resolución", "Reporte" o "Informe".
+- Si no hay observaciones, resoluciones, reportes ni informes en las fuentes, deja la lista vacía.
 - Si la evidencia es insuficiente, indícalo en limitaciones y usa confianza "baja".
 
 # EJEMPLO (estructura de referencia)
@@ -251,6 +254,10 @@ Consulta: Niña guatemalteca de 14 años desaparecida tras ir a trabajar domést
     {{"instrumento": "Protocolo de Palermo (Trata de Personas)", "articulos_clave": "Arts. 3, 5, 6", "observaciones": null}},
     {{"instrumento": "OIT Convenio 182 (Peores formas de trabajo infantil)", "articulos_clave": "Arts. 1, 3, 7", "observaciones": null}}
   ],
+  "observaciones_resoluciones": [
+    {{"tipo": "Observación general", "titulo": "Observación general N.º 6 del Comité de los Derechos del Niño", "organismo": "Comité de los Derechos del Niño", "relevancia": "Orienta la protección de niñas y niños no acompañados o separados en contextos de migración [1].", "fuentes": [1]}},
+    {{"tipo": "Informe", "titulo": "Informe del Relator Especial sobre la trata de personas", "organismo": "Relatoría Especial de la ONU", "relevancia": "Describe indicadores de explotación laboral de personas menores en trabajo doméstico [2].", "fuentes": [2]}}
+  ],
   "conclusion": "Existe una convergencia de violaciones que compromete la protección integral de la menor y obliga a los Estados a actuar con debida diligencia en investigación, búsqueda y reparación.",
   "confianza": "alta",
   "limitaciones": null
@@ -275,8 +282,9 @@ Realiza un análisis jurídico sistemático siguiendo estos pasos:
 3. Redacta "introduccion" contextualizando el caso.
 4. Enumera las "violaciones" con título descriptivo y análisis detallado por cada una.
 5. Completa "tratados" con instrumentos y artículos clave extraídos de las fuentes.
-6. Cierra con "conclusion" sobre convergencia de violaciones o mecanismos de protección.
-7. Evalúa "confianza" y documenta "limitaciones" si la evidencia es incompleta.
+6. Completa "observaciones_resoluciones" con observaciones generales, resoluciones, reportes e informes que consten en las fuentes.
+7. Cierra con "conclusion" sobre convergencia de violaciones o mecanismos de protección.
+8. Evalúa "confianza" y documenta "limitaciones" si la evidencia es incompleta.
 
 <<OUTPUT_START>>
 Responde con el objeto JSON estructurado:
@@ -303,8 +311,9 @@ Realiza un análisis jurídico sistemático siguiendo estos pasos:
 3. Redacta "introduccion" contextualizando el caso.
 4. Enumera las "violaciones" con título descriptivo y análisis detallado por cada una.
 5. Completa "tratados" con instrumentos y artículos clave extraídos de las fuentes.
-6. Cierra con "conclusion" sobre convergencia de violaciones o mecanismos de protección.
-7. Evalúa "confianza" y documenta "limitaciones" si la evidencia es incompleta.
+6. Completa "observaciones_resoluciones" con observaciones generales, resoluciones, reportes e informes que consten en las fuentes.
+7. Cierra con "conclusion" sobre convergencia de violaciones o mecanismos de protección.
+8. Evalúa "confianza" y documenta "limitaciones" si la evidencia es incompleta.
 
 <<OUTPUT_START>>
 Responde con el objeto JSON estructurado:

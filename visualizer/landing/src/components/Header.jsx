@@ -1,18 +1,5 @@
 import NavInfoMenu from './NavInfoMenu';
 
-function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 10.5L12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9V20.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function PillButton({ href, children, variant = 'join' }) {
   return (
     <div className="btn-border-wrap">
@@ -27,11 +14,23 @@ export default function Header() {
   return (
     <header className="header animate-fade-down">
       <div className="header-left">
-        <a href="/" className="logo" title="Inicio" aria-label="Inicio">
-          <span className="logo-mark">
-            <HomeIcon />
-          </span>
-          <span className="logo-text">Bienvenido</span>
+        <a href="/" className="header-logos" title="Inicio" aria-label="Inicio">
+          <img
+            src="/logos/UJAT_logo.png"
+            alt="Universidad Juárez Autónoma de Tabasco"
+            className="header-logo header-logo--ujat"
+          />
+          <span className="header-logos-rule" aria-hidden="true" />
+          <img
+            src="/logos/DACSyH_logo.png"
+            alt="DACSyH — División Académica de Ciencias Sociales y Humanidades"
+            className="header-logo header-logo--dacsyh"
+          />
+          <img
+            src="/logos/DACyTI_logo.png"
+            alt="DACyTI — División Académica de Ciencias y Tecnologías de la Información"
+            className="header-logo header-logo--dacyti"
+          />
         </a>
         <nav className="nav" aria-label="Principal">
           <NavInfoMenu />

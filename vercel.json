@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app/main.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{libros/**,benchmarks/**,tests/**,book_example/**,visualizer/landing/node_modules/**,visualizer/landing/src/**,**/*.pdf,.git/**}"
+    }
+  }
+}

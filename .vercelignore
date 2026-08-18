@@ -1,0 +1,16 @@
+# Reduce el tamaño del bundle en Vercel (Render no usa este archivo).
+libros/
+benchmarks/
+tests/
+book_example/
+.venv/
+venv/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+visualizer/landing/node_modules/
+grafo_libros/
+*.pklz
+.env

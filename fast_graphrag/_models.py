@@ -116,6 +116,32 @@ class TTratadoAplicable(BaseModel):
     )
 
 
+class TObservacionResolucionInforme(BaseModel):
+    tipo: str = Field(
+        ...,
+        description=(
+            "Clase de fuente: Observación general, Resolución, Reporte o Informe. "
+            "Usa exactamente una de esas etiquetas."
+        ),
+    )
+    titulo: str = Field(
+        ...,
+        description="Nombre o cita de la observación general, resolución, reporte o informe",
+    )
+    organismo: Optional[str] = Field(
+        None,
+        description="Comité, relatoría, consejo u órgano que la emitió, si consta en las fuentes",
+    )
+    relevancia: str = Field(
+        ...,
+        description="Cómo aplica a la consulta, con referencias [n] al final si hay fuentes",
+    )
+    fuentes: List[int] = Field(
+        default_factory=list,
+        description="IDs de las fuentes que respaldan este ítem",
+    )
+
+
 class TStructuredQueryAnswer(BaseModel):
     """Respuesta jurídica estructurada al estilo análisis sistemático (Claude)."""
 
@@ -136,6 +162,14 @@ class TStructuredQueryAnswer(BaseModel):
         default_factory=list,
         description="Tratados e instrumentos internacionales aplicables con artículos clave",
         max_length=15,
+    )
+    observaciones_resoluciones: List[TObservacionResolucionInforme] = Field(
+        default_factory=list,
+        description=(
+            "Observaciones generales, resoluciones, reportes e informes de órganos "
+            "de tratados, relatorías y mecanismos aplicables a la consulta"
+        ),
+        max_length=12,
     )
     conclusion: Optional[str] = Field(
         None,

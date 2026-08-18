@@ -1,10 +1,13 @@
-"""Quickstart de fast-graphrag con PDFs de la carpeta libros."""
+"""Quickstart de fast-graphrag: un PDF por documento, con metadata de origen."""
 
+from __future__ import annotations
+
+import argparse
 import os
+import shutil
 import sys
 from pathlib import Path
 
-# Raíz del repo (build en Render puede tener cwd distinto al runtime de uvicorn)
 _ROOT = Path(__file__).resolve().parent
 
 
@@ -16,39 +19,16 @@ def _resolve_dir(env_key: str, default_relative: str) -> str:
     return str((_ROOT / p).resolve())
 
 
-# Cargar .env si existe
 try:
     from dotenv import load_dotenv
-    load_dotenv(Path(__file__).resolve().parent / ".env")
+    load_dotenv(_ROOT / ".env")
 except ImportError:
     pass
 
-import fitz  # PyMuPDF
 from fast_graphrag import GraphRAG
 from fast_graphrag._llm import OpenAIEmbeddingService, OpenAILLMService
 
-
-def extraer_texto_pdf(ruta_pdf: str) -> str:
-    """Extrae el texto de un archivo PDF."""
-    doc = fitz.open(ruta_pdf)
-    texto = ""
-    for pagina in doc:
-        texto += pagina.get_text()
-    doc.close()
-    return texto
-
-
-def cargar_pdfs_carpeta(carpeta: str) -> str:
-    """Carga y concatena el texto de todos los PDFs en una carpeta."""
-    path = Path(carpeta)
-    textos = []
-    for archivo in sorted(path.glob("*.pdf")):
-        if archivo.name.startswith("._"):
-            continue
-        print(f"Procesando: {archivo.name}")
-        textos.append(extraer_texto_pdf(str(archivo)))
-    return "\n\n---\n\n".join(textos)
-
+from app.ingest import cargar_documentos
 
 DOMAIN = (
     "Analiza instrumentos internacionales y documentos de derechos humanos como un sistema integrado. "
@@ -76,35 +56,35 @@ ENTITY_TYPES = [
     "Órgano",
 ]
 
-# Límites de tasa para evitar error 429 (Rate limit exceeded)
-# Ajusta según tu plan en platform.openai.com/account/rate-limits
 _WORKDIR = _resolve_dir("GRAPH_WORKING_DIR", "grafo_libros")
 _LIBROS = _resolve_dir("LIBROS_DIR", "libros")
 
-grag = GraphRAG(
-    working_dir=_WORKDIR,
-    domain=DOMAIN,
-    example_queries="\n".join(EXAMPLE_QUERIES),
-    entity_types=ENTITY_TYPES,
-    config=GraphRAG.Config(
-        llm_service=OpenAILLMService(
-            model="gpt-4o-mini",
-            max_requests_concurrent=int(os.getenv("CONCURRENT_TASK_LIMIT", "4")),
-            rate_limit_per_minute=True,
-            max_requests_per_minute=30,
-            rate_limit_concurrency=True,
-        ),
-        embedding_service=OpenAIEmbeddingService(
-            max_requests_concurrent=4,
-            rate_limit_per_minute=True,
-            max_requests_per_minute=60,
-            rate_limit_concurrency=True,
-        ),
-    ),
-)
 
-def bucle_consultas():
-    """Bucle interactivo para drill-down: de lo general a lo específico."""
+def crear_grag(working_dir: str) -> GraphRAG:
+    return GraphRAG(
+        working_dir=working_dir,
+        domain=DOMAIN,
+        example_queries="\n".join(EXAMPLE_QUERIES),
+        entity_types=ENTITY_TYPES,
+        config=GraphRAG.Config(
+            llm_service=OpenAILLMService(
+                model="gpt-4o-mini",
+                max_requests_concurrent=int(os.getenv("CONCURRENT_TASK_LIMIT", "4")),
+                rate_limit_per_minute=True,
+                max_requests_per_minute=30,
+                rate_limit_concurrency=True,
+            ),
+            embedding_service=OpenAIEmbeddingService(
+                max_requests_concurrent=4,
+                rate_limit_per_minute=True,
+                max_requests_per_minute=60,
+                rate_limit_concurrency=True,
+            ),
+        ),
+    )
+
+
+def bucle_consultas(grag: GraphRAG) -> None:
     print("\n" + "=" * 60)
     print("Modo drill-down: explora de lo general a lo específico.")
     print("Ejemplos: pregunta general → luego consultas más concretas.")
@@ -133,16 +113,56 @@ def bucle_consultas():
             print(f"\nError: {e}")
 
 
-texto = cargar_pdfs_carpeta(_LIBROS)
-if not texto.strip():
-    raise RuntimeError(f"No se encontró texto para ingesta en {_LIBROS}. Verifica que existan PDFs válidos.")
+def _borrar_grafo(working_dir: str) -> None:
+    path = Path(working_dir)
+    if path.exists():
+        shutil.rmtree(path)
+        print(f"Se eliminó {path} para reindexar con metadata por PDF.")
+    path.mkdir(parents=True, exist_ok=True)
 
-grag.insert(texto)
-print("\n¡Grafos cargados!")
 
-# En Render/build no hay stdin interactivo: evitar EOF en input().
-if sys.stdin.isatty():
-    print("Iniciando modo consulta...")
-    bucle_consultas()
-else:
-    print("Entorno no interactivo detectado; se omite el modo consulta.")
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Ingesta de PDFs de libros/ (un documento por archivo, con metadata)."
+    )
+    parser.add_argument(
+        "--reingestar",
+        action="store_true",
+        help="Borra grafo_libros/ y vuelve a indexar. Necesario para que los chunks antiguos tengan origen por PDF.",
+    )
+    args = parser.parse_args()
+
+    documentos = cargar_documentos(_LIBROS)
+    if not documentos:
+        raise RuntimeError(f"No se encontró texto para ingesta en {_LIBROS}. Verifica que existan PDFs válidos.")
+
+    workdir = Path(_WORKDIR)
+    if args.reingestar:
+        _borrar_grafo(_WORKDIR)
+    elif (workdir / "graph_igraph_data.pklz").exists():
+        print(
+            "\n⚠️  Ya existe un grafo en "
+            f"{workdir}. Los chunks viejos no tienen metadata de archivo.\n"
+            "   Los PDF nuevos sí se citarán; para citar TODO el corpus ejecuta:\n"
+            "   python run_quickstart.py --reingestar\n"
+        )
+
+    textos = [d["texto"] for d in documentos]
+    metas = [d["metadata"] for d in documentos]
+    print(f"Insertando {len(textos)} PDF(s) como documentos independientes:")
+    for meta in metas:
+        print(f"  • {meta['archivo']}  →  {meta['instrumento']}")
+
+    grag = crear_grag(_WORKDIR)
+    grag.insert(textos, metadata=metas)
+    print("\n¡Grafos cargados con origen por documento!")
+
+    if sys.stdin.isatty():
+        print("Iniciando modo consulta...")
+        bucle_consultas(grag)
+    else:
+        print("Entorno no interactivo detectado; se omite el modo consulta.")
+
+
+if __name__ == "__main__":
+    main()

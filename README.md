@@ -27,7 +27,7 @@ Este repositorio integra **GraphRAG** con una **API web (FastAPI)** y una **inte
 | **Branding** | Título y mensajes orientados a *Redes Semánticas para los Derechos Humanos* (sin marcas comerciales del demo original). |
 | **API** | `app/main.py`: `POST /api/query`, `GET /api/grafo`, respuesta con explicación, argumentación y subgrafo **impactado** por la consulta. |
 | **Frontend** | `visualizer/consulta.html`: layout con header, leyenda **centrada** y **filtros por tipo** de entidad (solo sobre el resultado de la última consulta); **mostrar todos** restaura ese resultado; paneles *Explicación*, *Argumentación*, *Marco normativo*, *Relaciones relevantes*; fondo degradado en el lienzo del grafo; física desactivada tras el layout para que los nodos **permanezcan** al arrastrarlos; botones **Centrar**, **Ver red completa**, **Exportar PDF**, **Nueva consulta**. |
-| **Ingesta** | `run_quickstart.py`: lectura de **PDFs** desde `libros/` (PyMuPDF), mismo dominio y tipos de entidad que la API; persistencia en `grafo_libros/`. |
+| **Ingesta** | `run_quickstart.py`: un **PDF por documento** desde `libros/` (PyMuPDF) con metadata de origen (`instrumento`, `archivo`); persistencia en `grafo_libros/`. Para recitar el corpus ya indexado: `python run_quickstart.py --reingestar`. |
 | **Arranque** | `run_consulta.py`: carga de `.env` por ruta explícita; servidor **Uvicorn** en el puerto **8080**. |
 | **Utilidades** | `export_grafo.py` → `visualizer/grafo.json`; `run_visualizer.py` para vista estática sin API; `Iniciar-Servidor.command` (macOS, doble clic). |
 | **Documentación local** | `guia-arranque.md` con pasos en español. |
@@ -73,7 +73,13 @@ source venv/bin/activate
 python run_quickstart.py
 ```
 
-Genera/actualiza archivos en `grafo_libros/` (grafo igraph, índices vectoriales, chunks).
+Genera/actualiza archivos en `grafo_libros/` (grafo igraph, índices vectoriales, chunks). Cada PDF se indexa como documento propio, con el nombre del instrumento y el archivo de origen.
+
+Si el grafo ya existía **sin** esa metadata, recítalo:
+
+```bash
+python run_quickstart.py --reingestar
+```
 
 ### 2. Interfaz web de consultas
 
@@ -166,6 +172,22 @@ Tras desplegar:
 - abre `/` para cargar la interfaz.
 - prueba `GET /api/grafo` (debe devolver nodos/aristas una vez generado el grafo).
 - prueba `POST /api/query` con una consulta.
+
+---
+
+## Despliegue en Vercel (coexiste con Render)
+
+Vercel sirve la misma app FastAPI (`app.main:app`) como Function. **No reemplaza** a Render: `render.yaml` sigue siendo el camino recomendado para ingesta + grafo completo.
+
+1. Conecta el repo en Vercel (Framework Preset: FastAPI / Other).
+2. Define variables de entorno: `OPENAI_API_KEY`, y opcionalmente `CORS_ORIGINS`, `CONCURRENT_TASK_LIMIT`.
+3. Despliega. El build usa `pyproject.toml` (`[project]`) + `uv`; la entrada está en `[tool.vercel] entrypoint = "app.main:app"`.
+
+Notas:
+
+- `vercel.json` fija `maxDuration` a 60s (consultas GraphRAG pueden ser largas).
+- `.vercelignore` excluye `libros/`, tests y `grafo_libros/` para no inflar el bundle.
+- Sin `grafo_libros/` en el deploy, `/api/grafo` puede usar el respaldo `visualizer/grafo.json`; las **consultas LLM** requieren el grafo persistido (mejor en Render con disco o build de ingesta).
 
 ---
 

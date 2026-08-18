@@ -58,7 +58,8 @@ cd /Volumes/KINGSTON/descargas-mac-mini/fast-graphrag-main && source venv/bin/ac
 | Script | Uso |
 |--------|-----|
 | `python run_consulta.py` | Interfaz web completa: consultas, explicación, argumentación y grafo impactado. |
-| `python run_quickstart.py` | Procesa PDFs de la carpeta `libros/` y modo consulta en terminal. Usar cuando agregues nuevos documentos. |
+| `python run_quickstart.py` | Procesa cada PDF de `libros/` como documento independiente (con origen). |
+| `python run_quickstart.py --reingestar` | Borra `grafo_libros/` y vuelve a indexar para citar el archivo de origen en cada nodo. |
 | `python run_visualizer.py` | Solo visualización del grafo (sin consultas). No requiere API key. |
 
 ---

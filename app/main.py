@@ -11,6 +11,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from app.formatters import humanizar_relacion
+
 # Raíz del proyecto (no depender del cwd de uvicorn en Render/Docker)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 VISUALIZER_DIR = _PROJECT_ROOT / "visualizer"
@@ -173,7 +175,7 @@ def _load_grafo_desde_pklz(graph_path: Path) -> dict:
     edges = []
     for e in g.es:
         attrs = e.attributes()
-        desc = attrs.get("description", "") or ""
+        desc = humanizar_relacion(attrs.get("description", "") or "")
         edges.append({
             "from": g.vs[e.source]["name"],
             "to": g.vs[e.target]["name"],
@@ -183,15 +185,24 @@ def _load_grafo_desde_pklz(graph_path: Path) -> dict:
     return {"nodes": nodes, "edges": edges}
 
 
+def _humanizar_relaciones_grafo(data: dict) -> dict:
+    """Normaliza etiquetas técnicas de aristas (p. ej. «is») en todo el grafo."""
+    for edge in data.get("edges") or []:
+        desc = humanizar_relacion(edge.get("title") or edge.get("label") or "")
+        edge["title"] = desc
+        edge["label"] = desc[:100]
+    return data
+
+
 def _load_grafo() -> dict:
     """Fuente canónica: graph_igraph_data.pklz (como en Render). grafo.json solo como respaldo."""
     graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
     if graph_path.exists():
-        return _load_grafo_desde_pklz(graph_path)
+        return _humanizar_relaciones_grafo(_load_grafo_desde_pklz(graph_path))
 
     json_path = VISUALIZER_DIR / "grafo.json"
     if json_path.exists():
-        return _load_grafo_desde_json(json_path)
+        return _humanizar_relaciones_grafo(_load_grafo_desde_json(json_path))
 
     raise HTTPException(
         status_code=404,

@@ -6,6 +6,37 @@ authors = ["Luca Pinchetti <luca@circlemind.co>", "Antonio Vespoli <antonio@circ
 packages = [{include = "fast_graphrag" }]
 readme = "README.md"
 
+# PEP 621: requerido por Vercel (`uv lock`). Coexiste con Poetry ([tool.poetry]) usado en Render/local.
+[project]
+name = "fast-graphrag"
+version = "0.0.5"
+description = "Redes semánticas para los derechos humanos (GraphRAG + FastAPI)"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "igraph>=0.11.6,<0.12",
+  "xxhash>=3.5.0",
+  "pydantic>=2.9.2",
+  "scipy>=1.14.1",
+  "scikit-learn>=1.5.2",
+  "tenacity>=9.0.0",
+  "openai>=1.52.1",
+  "scipy-stubs>=1.14.1.5",
+  "hnswlib>=0.8.0",
+  "instructor>=1.6.3",
+  "requests>=2.32.3",
+  "python-dotenv>=1.0.1",
+  "tiktoken>=0.8.0",
+  "aiolimiter>=1.1.0",
+  "json-repair>=0.39.1",
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pymupdf>=1.24.0",
+]
+
+[tool.vercel]
+entrypoint = "app.main:app"
+
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
 igraph = "^0.11.6"

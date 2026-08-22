@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Referrer-Policy" content="no-referrer">
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js 'nonce-gisco-mermaid-sandbox' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'">
+  <title>Diagrama aislado</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #18181b;
+      color: #e4e4e7;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    #app {
+      padding: 4px 2px;
+      min-height: 120px;
+    }
+    #app svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    .err {
+      margin: 0.6rem;
+      color: #fca5a5;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script nonce="gisco-mermaid-sandbox">
+    (function () {
+      var MAX_CHARS = 12000;
+      var MAX_LINES = 80;
+      var TIMEOUT_MS = 3500;
+      var ALLOWED = /^(flowchart|graph|sequencediagram|classdiagram|mindmap)\b/i;
+      var FORBIDDEN = /(<script|<\/script|javascript:|vbscript:|data:text\/html|on\w+\s*=|foreignObject|<iframe|eval\s*\(|new\s+Function)/i;
+      var BAD_LINE = /^\s*(click|call|href)\b/i;
+      var INIT = /%%\{[\s\S]*?\}%%/gi;
+      var busy = false;
+
+      function sanitize(code) {
+        var s = String(code || '').replace(/\x00/g, '').trim();
+        s = s.replace(/^```(?:mermaid)?\s*/i, '').replace(/\s*```$/, '');
+        s = s.replace(INIT, '');
+        if (!s || FORBIDDEN.test(s) || s.length > MAX_CHARS) return '';
+        var lines = s.split(/\r?\n/);
+        if (lines.length > MAX_LINES) return '';
+        var kept = [];
+        for (var i = 0; i < lines.length; i++) {
+          if (BAD_LINE.test(lines[i]) || /javascript:/i.test(lines[i])) continue;
+          kept.push(lines[i].replace(/\s+$/, ''));
+        }
+        s = kept.join('\n').trim();
+        var first = '';
+        kept.forEach(function (ln) { if (!first && ln.trim()) first = ln.trim(); });
+        if (!s || !ALLOWED.test(first)) return '';
+        return s;
+      }
+
+      function insertSvg(svgText) {
+        var parsed = new DOMParser().parseFromString(String(svgText || ''), 'image/svg+xml');
+        var root = parsed.documentElement;
+        if (!root || String(root.tagName).toLowerCase() !== 'svg') {
+          throw new Error('svg');
+        }
+        root.querySelectorAll('script, foreignObject, iframe, object, embed, a').forEach(function (n) {
+          n.remove();
+        });
+        Array.prototype.slice.call(root.querySelectorAll('*')).forEach(function (el) {
+          Array.prototype.slice.call(el.attributes).forEach(function (a) {
+            var name = String(a.name || '').toLowerCase();
+            var val = String(a.value || '');
+            if (name.indexOf('on') === 0 || /javascript:/i.test(val) || name === 'href' || name === 'xlink:href') {
+              el.removeAttribute(a.name);
+            }
+          });
+        });
+        var app = document.getElementById('app');
+        var clean = document.importNode(root, true);
+        app.replaceChildren(clean);
+        return new XMLSerializer().serializeToString(clean);
+      }
+
+      function timeout(ms) {
+        return new Promise(function (_, reject) {
+          setTimeout(function () { reject(new Error('timeout')); }, ms);
+        });
+      }
+
+      function reply(event, payload) {
+        var target = event.origin && event.origin !== 'null' ? event.origin : '*';
+        parent.postMessage(payload, target);
+      }
+
+      if (window.mermaid) {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'dark',
+          securityLevel: 'strict',
+          htmlLabels: false,
+          fontFamily: 'Segoe UI, system-ui, sans-serif',
+          flowchart: { useMaxWidth: true, htmlLabels: false, curve: 'basis', padding: 12 }
+        });
+      }
+
+      window.addEventListener('message', function (event) {
+        if (event.source !== window.parent) return;
+        var data = event.data;
+        if (!data || data.type !== 'render' || typeof data.id !== 'string') return;
+        if (typeof data.code !== 'string') {
+          reply(event, { type: 'error', id: data.id, message: 'payload' });
+          return;
+        }
+        if (busy) {
+          reply(event, { type: 'error', id: data.id, message: 'busy' });
+          return;
+        }
+
+        var code = sanitize(data.code);
+        if (!code) {
+          reply(event, { type: 'error', id: data.id, message: 'rejected' });
+          return;
+        }
+        if (!window.mermaid || typeof mermaid.render !== 'function') {
+          reply(event, { type: 'error', id: data.id, message: 'unavailable' });
+          return;
+        }
+
+        busy = true;
+        var renderId = 'm' + data.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+        Promise.race([mermaid.render(renderId || 'm1', code), timeout(TIMEOUT_MS)])
+          .then(function (out) {
+            var svg = insertSvg(out && out.svg ? out.svg : out);
+            var h = Math.max(140, Math.min(720, Math.ceil(document.documentElement.scrollHeight || 200)));
+            var payload = { type: 'ok', id: data.id, height: h };
+            if (svg && svg.length < 400000) payload.svg = svg;
+            reply(event, payload);
+          })
+          .catch(function () {
+            document.getElementById('app').innerHTML = '<p class="err">No se pudo dibujar el diagrama.</p>';
+            reply(event, { type: 'error', id: data.id, message: 'render' });
+          })
+          .then(function () { busy = false; });
+      });
+
+      try {
+        parent.postMessage({ type: 'sandbox-ready' }, '*');
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+</body>
+</html>

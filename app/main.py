@@ -349,6 +349,41 @@ def consulta():
     return FileResponse(VISUALIZER_DIR / "consulta.html")
 
 
+_MERMAID_SANDBOX_CSP = (
+    "default-src 'none'; "
+    "script-src https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js 'nonce-gisco-mermaid-sandbox' 'unsafe-eval'; "
+    "style-src 'unsafe-inline'; "
+    "img-src data:; "
+    "font-src data:; "
+    "connect-src 'none'; "
+    "worker-src 'none'; "
+    "object-src 'none'; "
+    "base-uri 'none'; "
+    "form-action 'none'; "
+    "frame-ancestors 'self'"
+)
+
+
+@app.get("/mermaid-sandbox.html")
+def mermaid_sandbox():
+    """Entorno aislado para pintar Mermaid: sin red propia, sin almacenamiento ni padre DOM."""
+    path = VISUALIZER_DIR / "mermaid-sandbox.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Sandbox de diagramas no disponible.")
+    return FileResponse(
+        path,
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Content-Security-Policy": _MERMAID_SANDBOX_CSP,
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "no-referrer",
+            "X-Frame-Options": "SAMEORIGIN",
+            "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+            "Cross-Origin-Resource-Policy": "same-origin",
+        },
+    )
+
+
 @app.get("/config.js")
 def visualizer_config():
     return FileResponse(VISUALIZER_DIR / "config.js", media_type="application/javascript")

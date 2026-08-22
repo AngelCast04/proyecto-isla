@@ -21,6 +21,14 @@ export default function Header() {
             className="header-logo header-logo--ujat"
           />
           <span className="header-logos-rule" aria-hidden="true" />
+          <span
+            className="header-logo-text header-logo--sipyv"
+            title="Secretaría de Investigación, Posgrado y Vinculación"
+          >
+            <span className="header-logo-text-line">Secretaría de Investigación,</span>
+            <span className="header-logo-text-line">Posgrado y Vinculación</span>
+          </span>
+          <span className="header-logos-rule" aria-hidden="true" />
           <img
             src="/logos/DACSyH_logo.png"
             alt="DACSyH — División Académica de Ciencias Sociales y Humanidades"

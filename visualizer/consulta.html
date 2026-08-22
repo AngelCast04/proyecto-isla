@@ -912,6 +912,47 @@
       padding-top: 0.5rem;
       border-top: 1px dashed #3f3f46;
     }
+    .mermaid-wrap {
+      margin: 0.9rem 0 0.25rem;
+      padding: 0.75rem 0.8rem 0.55rem;
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 0.65rem;
+      overflow: hidden;
+    }
+    .mermaid-kicker {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #c4b5fd;
+      font-weight: 650;
+      margin: 0 0 0.55rem;
+    }
+    .mermaid-frame {
+      display: block;
+      width: 100%;
+      min-height: 160px;
+      height: 200px;
+      border: 0;
+      background: #18181b;
+      border-radius: 0.4rem;
+    }
+    .mermaid-src { display: none; }
+    .mermaid-print { display: none; }
+    .mermaid-fallback {
+      margin: 0.5rem 0 0;
+      color: #a1a1aa;
+      font-size: 0.78rem;
+    }
+    .mermaid-fallback pre {
+      margin: 0.4rem 0 0;
+      padding: 0.55rem 0.65rem;
+      background: #09090b;
+      border-radius: 0.4rem;
+      color: #d4d4d8;
+      font-size: 0.72rem;
+      white-space: pre-wrap;
+    }
 
     /* Pantallas independientes: chat | grafo */
     .vista {
@@ -989,16 +1030,18 @@
       justify-content: flex-end;
     }
     .msg-avatar {
-      width: 2rem;
+      min-width: 2.75rem;
       height: 2rem;
+      padding: 0 0.4rem;
       border-radius: 0.45rem;
       background: #312e81;
       color: #c4b5fd;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.7rem;
+      font-size: 0.58rem;
       font-weight: 700;
+      letter-spacing: 0.02em;
       flex-shrink: 0;
       margin-top: 0.15rem;
     }
@@ -1057,6 +1100,16 @@
       line-height: 1.55;
     }
     .msg-tab-panel.activo { display: block; }
+    .explicacion-diagrama-secuencial {
+      margin: 0.85rem 0 1.05rem;
+    }
+    .explicacion-diagrama-secuencial .mermaid-wrap {
+      margin: 0;
+    }
+    .explicacion-diagrama-secuencial .mermaid-frame {
+      min-height: 260px;
+      height: 320px;
+    }
     .msg-actions {
       display: flex;
       gap: 0.5rem;
@@ -1255,6 +1308,8 @@
         gap: 8px 14px;
         margin: 8px 0 12px;
         font-size: 8pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       #informeExport .informe-leyenda-tipos span {
         display: inline-flex;
@@ -1263,11 +1318,10 @@
         color: #111 !important;
       }
       #informeExport .informe-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
         display: inline-block;
-        border: 1px solid #444;
       }
       #informeExport .informe-ficha {
         border: 1px solid #d4d4d8;
@@ -1304,6 +1358,31 @@
       }
       #informeExport .estado-vacio,
       #informeExport .skeleton { display: none; }
+      #informeExport .mermaid-wrap {
+        background: #18181b;
+        border: 1px solid #d4d4d8;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      #informeExport .mermaid-kicker { color: #4f46e5 !important; }
+      #informeExport .explicacion-diagrama-secuencial {
+        margin: 10px 0 14px;
+      }
+      #informeExport .mermaid-frame,
+      #informeExport .mermaid-src,
+      #informeExport .mermaid-fallback { display: none !important; }
+      #informeExport .mermaid-print {
+        display: block !important;
+        background: #18181b;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      #informeExport .mermaid-print svg {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+      }
     }
   </style>
 </head>
@@ -1315,7 +1394,7 @@
           <path d="M4 10.5L12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9V20.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
         </svg>
       </a>
-      <span>Asistente IA de Derechos Humanos</span>
+      <span> GISCO: Asistente IA de Derechos Humanos</span>
     </h1>
     <nav class="vista-tabs" aria-label="Pantallas">
       <button type="button" class="vista-tab activo" id="tabChat" onclick="mostrarVista('chat')">Consulta</button>
@@ -1331,7 +1410,7 @@
     <div class="chat-scroll" id="chatScroll">
       <div class="chat-inner">
         <div class="chat-empty" id="chatEmpty">
-          <h2>Bienvenido, ¿En qué puedo ayudarte?</h2>
+          <h2>Bienvenido a GISCO, ¿En qué puedo ayudarte?</h2>
           <p>Puedes escribir una consulta sobre el corpus de derechos humanos. La respuesta incluye explicación, argumentación, marco normativo, observaciones e informes, y relaciones relevantes.</p>
           <div class="chat-suggestions">
             <button type="button" class="chat-chip" onclick="enviarConsulta('¿Qué instrumentos protegen a personas indígenas?')">Instrumentos para pueblos indígenas</button>
@@ -1476,6 +1555,11 @@
     const API = (typeof window.__API_BASE__ === 'string'
       ? String(window.__API_BASE__).replace(/\/$/, '')
       : '');
+    const MERMAID_SANDBOX_URL = (API || '') + '/mermaid-sandbox.html';
+    const MERMAID_MAX_CHARS = 12000;
+    const MERMAID_MAX_LINES = 80;
+    const MERMAID_TIMEOUT_MS = 4000;
+    const MERMAID_CONCURRENCY = 2;
 
     let vistaActiva = 'chat';
     let msgSeq = 0;
@@ -1539,7 +1623,7 @@
       art.className = 'msg msg-assistant';
       art.id = 'msg-' + id;
       art.innerHTML =
-        '<div class="msg-avatar">IA</div>' +
+        '<div class="msg-avatar">GISCO</div>' +
         '<div class="msg-body">' +
           '<div class="msg-tabs" role="tablist">' +
             '<button type="button" class="msg-tab activo" data-tab="explicacion">Explicación</button>' +
@@ -1737,7 +1821,9 @@
       'concepto juridico': 'Concepto_Jurídico',
       organo: 'Órgano',
       pais: 'País',
-      otro: 'Otro'
+      otro: 'Otro',
+      unknown: 'Otro',
+      desconocido: 'Otro'
     };
     const ORDEN_TIPOS_MARCO = [
       'Tratado', 'Derecho', 'Resolución', 'Organismo', 'Mecanismo',
@@ -1752,6 +1838,7 @@
     function etiquetaTipoLegible(group) {
       var canon = tipoCanonico(group);
       if (canon === 'Concepto_Jurídico') return 'Concepto jurídico';
+      if (/^unknown$/i.test(String(canon))) return 'Otro';
       return String(canon).replace(/_/g, ' ');
     }
 
@@ -2540,6 +2627,195 @@
       if (thread) thread.innerHTML = '';
     }
 
+    function extraerMermaidDeTexto(texto) {
+      var src = String(texto || '');
+      var bloques = [];
+      if (!src.trim()) return { texto: '', bloques: bloques };
+
+      var reDelim = /<<MERMAID_START(?::([A-Za-z0-9_-]+))?>>\s*(?:```(?:mermaid)?\s*)?([\s\S]*?)(?:```\s*)?<<MERMAID_END>>/gi;
+      var limpio = src.replace(reDelim, function(_, kind, code) {
+        var c = sanitizarMermaidCliente(code);
+        if (c) bloques.push({ kind: String(kind || '').toLowerCase(), code: c });
+        return '\n';
+      });
+      limpio = limpio.replace(/```mermaid\s*([\s\S]*?)```/gi, function(_, code) {
+        var c = sanitizarMermaidCliente(code);
+        if (c) bloques.push({ kind: '', code: c });
+        return '\n';
+      });
+      limpio = limpio.replace(/\n{3,}/g, '\n\n').trim();
+      return { texto: limpio, bloques: bloques };
+    }
+
+    function sanitizarMermaidCliente(code) {
+      var s = String(code || '').replace(/\x00/g, '').trim();
+      s = s.replace(/^```(?:mermaid)?\s*/i, '').replace(/\s*```$/, '');
+      s = s.replace(/%%\{[\s\S]*?\}%%/gi, '');
+      if (!s || s.length > MERMAID_MAX_CHARS) return '';
+      if (/(<script|<\/script|javascript:|vbscript:|data:text\/html|on\w+\s*=|foreignObject|<iframe|eval\s*\(|new\s+Function)/i.test(s)) {
+        return '';
+      }
+      var lines = s.split(/\r?\n/);
+      if (lines.length > MERMAID_MAX_LINES) return '';
+      var kept = [];
+      for (var i = 0; i < lines.length; i++) {
+        if (/^\s*(click|call|href)\b/i.test(lines[i]) || /javascript:/i.test(lines[i])) continue;
+        kept.push(lines[i].replace(/\s+$/, ''));
+      }
+      s = kept.join('\n').trim();
+      var first = '';
+      kept.forEach(function(ln) { if (!first && ln.trim()) first = ln.trim(); });
+      if (!s || !/^(flowchart|graph|sequencediagram|classdiagram|mindmap)\b/i.test(first)) return '';
+      return s;
+    }
+
+    function tituloMermaid(kind) {
+      if (kind === 'grafo') return 'Mapa del grafo impactado';
+      if (kind === 'analisis') return 'Mapa del análisis jurídico';
+      return 'Diagrama';
+    }
+
+    function escMermaid(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function htmlMermaid(bloques) {
+      if (!bloques || !bloques.length) return '';
+      var html = '';
+      bloques.forEach(function(b) {
+        var code = sanitizarMermaidCliente(b.code);
+        if (!code) return;
+        html += '<div class="mermaid-wrap">';
+        html += '<p class="mermaid-kicker">' + esc(tituloMermaid(b.kind)) + '</p>';
+        html += '<iframe class="mermaid-frame" sandbox="allow-scripts" referrerpolicy="no-referrer" allow="" title="Diagrama aislado"></iframe>';
+        html += '<pre class="mermaid-src" hidden>' + escMermaid(code) + '</pre>';
+        html += '<div class="mermaid-print" hidden></div>';
+        html += '</div>';
+      });
+      return html;
+    }
+
+    function insertMermaidPrint(wrap, svgText) {
+      var slot = wrap.querySelector('.mermaid-print');
+      if (!slot) {
+        slot = document.createElement('div');
+        slot.className = 'mermaid-print';
+        wrap.appendChild(slot);
+      }
+      try {
+        var parsed = new DOMParser().parseFromString(String(svgText || ''), 'image/svg+xml');
+        var root = parsed.documentElement;
+        if (!root || String(root.tagName).toLowerCase() !== 'svg') return;
+        root.querySelectorAll('script, foreignObject, iframe, object, embed, a').forEach(function(n) {
+          n.remove();
+        });
+        Array.prototype.slice.call(root.querySelectorAll('*')).concat([root]).forEach(function(el) {
+          Array.prototype.slice.call(el.attributes || []).forEach(function(a) {
+            var name = String(a.name || '').toLowerCase();
+            var val = String(a.value || '');
+            if (name.indexOf('on') === 0 || /javascript:/i.test(val) || name === 'href' || name === 'xlink:href') {
+              el.removeAttribute(a.name);
+            }
+          });
+        });
+        slot.hidden = false;
+        slot.replaceChildren(document.importNode(root, true));
+      } catch (e) { /* ignore */ }
+    }
+
+    function fallbackMermaid(wrap, code, titulo) {
+      wrap.innerHTML =
+        '<p class="mermaid-kicker">' + esc(titulo || 'Diagrama') + '</p>' +
+        '<details class="mermaid-fallback" open><summary>No se pudo dibujar el diagrama aislado</summary><pre>' +
+        escMermaid(code || '') + '</pre></details>';
+    }
+
+    function renderMermaidSandbox(wrap) {
+      return new Promise(function(resolve) {
+        var srcEl = wrap.querySelector('.mermaid-src');
+        var iframe = wrap.querySelector('iframe.mermaid-frame');
+        var kicker = wrap.querySelector('.mermaid-kicker');
+        var code = sanitizarMermaidCliente(srcEl ? srcEl.textContent : '');
+        var titulo = kicker ? kicker.textContent : 'Diagrama';
+        if (!code || !iframe) {
+          fallbackMermaid(wrap, code, titulo);
+          resolve();
+          return;
+        }
+
+        var requestId = 'mm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var settled = false;
+        var sent = false;
+        var timer = null;
+
+        function finish() {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener('message', onMsg);
+          window.removeEventListener('message', readyHandler);
+          if (timer) clearTimeout(timer);
+          resolve();
+        }
+
+        function onMsg(event) {
+          if (event.source !== iframe.contentWindow) return;
+          var data = event.data;
+          if (!data || data.id !== requestId) return;
+          if (data.type === 'ok') {
+            var h = Number(data.height) || 200;
+            iframe.style.height = Math.max(160, Math.min(720, h + 8)) + 'px';
+            if (data.svg) insertMermaidPrint(wrap, data.svg);
+            finish();
+            return;
+          }
+          if (data.type === 'error') {
+            fallbackMermaid(wrap, code, titulo);
+            finish();
+          }
+        }
+
+        function enviar() {
+          if (settled || sent || !iframe.contentWindow) return;
+          sent = true;
+          try {
+            iframe.contentWindow.postMessage({ type: 'render', id: requestId, code: code }, '*');
+          } catch (err) {
+            fallbackMermaid(wrap, code, titulo);
+            finish();
+          }
+        }
+
+        function readyHandler(event) {
+          if (event.source !== iframe.contentWindow) return;
+          if (!event.data || event.data.type !== 'sandbox-ready') return;
+          enviar();
+        }
+
+        window.addEventListener('message', onMsg);
+        window.addEventListener('message', readyHandler);
+        timer = setTimeout(function() {
+          fallbackMermaid(wrap, code, titulo);
+          finish();
+        }, MERMAID_TIMEOUT_MS);
+
+        try {
+          iframe.credentialless = true;
+        } catch (e) { /* ignore */ }
+        iframe.src = MERMAID_SANDBOX_URL;
+      });
+    }
+
+    async function pintarMermaid(root) {
+      if (!root) return;
+      var wraps = Array.from(root.querySelectorAll('.mermaid-wrap:not([data-sandbox-bound])'));
+      if (!wraps.length) return;
+      wraps.forEach(function(w) { w.setAttribute('data-sandbox-bound', '1'); });
+      for (var i = 0; i < wraps.length; i += MERMAID_CONCURRENCY) {
+        var lote = wraps.slice(i, i + MERMAID_CONCURRENCY).map(renderMermaidSandbox);
+        await Promise.all(lote);
+      }
+    }
+
     function renderArgumentacion(texto) {
       if (!texto || !String(texto).trim()) {
         return renderEstadoVacio('¶', 'Sin elementos del grafo', 'No hay entidades en el subgrafo impactado.');
@@ -2582,10 +2858,16 @@
       return html || renderEstadoVacio('¶', 'Sin elementos del grafo', 'No hay datos para mostrar.');
     }
 
-    function renderRespuestaEstructurada(structured, fallbackText) {
+    function renderRespuestaEstructurada(structured, fallbackText, diagramaHtml) {
+      diagramaHtml = diagramaHtml || '';
       if (!structured || typeof structured !== 'object') {
         const txt = limpiarTextoExplicacion(fallbackText || '');
-        return txt ? '<div class="analisis-juridico"><p class="intro">' + esc(txt) + '</p></div>' : '';
+        if (!txt && !diagramaHtml) return '';
+        var htmlFb = '<div class="analisis-juridico">';
+        if (txt) htmlFb += '<p class="intro">' + esc(txt) + '</p>';
+        if (diagramaHtml) htmlFb += '<div class="explicacion-diagrama-secuencial">' + diagramaHtml + '</div>';
+        htmlFb += '</div>';
+        return htmlFb;
       }
 
       const intro = limpiarTextoExplicacion(structured.introduccion || '');
@@ -2632,11 +2914,20 @@
         html += '<p class="conclusion">' + esc(conclusion) + '</p>';
       }
 
+      if (diagramaHtml) {
+        html += '<div class="explicacion-diagrama-secuencial">' + diagramaHtml + '</div>';
+      }
+
       html += '</div>';
 
       if (!intro && !violaciones.length && !tratados.length) {
         const txt = limpiarTextoExplicacion(fallbackText || '');
-        return txt ? '<div class="analisis-juridico"><p class="intro">' + esc(txt) + '</p></div>' : '';
+        if (!txt && !diagramaHtml) return '';
+        var htmlAlt = '<div class="analisis-juridico">';
+        if (txt) htmlAlt += '<p class="intro">' + esc(txt) + '</p>';
+        if (diagramaHtml) htmlAlt += '<div class="explicacion-diagrama-secuencial">' + diagramaHtml + '</div>';
+        htmlAlt += '</div>';
+        return htmlAlt;
       }
 
       return html;
@@ -2985,21 +3276,12 @@
       var r = n > 28 ? 13 : (n > 14 ? 17 : 21);
       var fontNodo = n > 28 ? 11 : (n > 14 ? 13 : 14);
       var wrap = n > 28 ? 22 : 28;
-      var pad = { l: 96, r: 96, t: 36, b: 78 };
+      var pad = { l: 96, r: 96, t: 36, b: 48 };
       var showEdgeText = n <= 18 && edges.length <= 22;
       var pos = posicionesParaInforme(nodes);
       encajarEnLienzo(pos, ids, vbW, vbH, pad);
       separarNodos(pos, ids, minDist, 60);
       encajarEnLienzo(pos, ids, vbW, vbH, pad);
-
-      var tipos = [];
-      var seenTipo = {};
-      nodes.forEach(function(nd) {
-        var canon = tipoCanonico(nd.group || 'Otro');
-        if (seenTipo[canon]) return;
-        seenTipo[canon] = true;
-        tipos.push({ canon: canon, label: etiquetaTipoLegible(nd.group) });
-      });
 
       var svg = '<svg class="informe-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' +
         vbW + ' ' + vbH + '" width="100%" role="img" aria-label="Grafo impactado">';
@@ -3040,14 +3322,6 @@
           });
         }
       });
-
-      var lx = pad.l;
-      var ly = vbH - 22;
-      tipos.forEach(function(t) {
-        svg += '<circle cx="' + lx + '" cy="' + (ly - 4) + '" r="6" fill="' + colorPorTipo(t.canon) + '" stroke="#111"/>';
-        svg += '<text x="' + (lx + 12) + '" y="' + ly + '" font-size="12" fill="#111827">' + escXml(t.label) + '</text>';
-        lx += 28 + Math.min(String(t.label).length, 22) * 7;
-      });
       svg += '</svg>';
       return svg;
     }
@@ -3059,7 +3333,9 @@
         var canon = tipoCanonico(n.group || 'Otro');
         if (seen[canon]) return;
         seen[canon] = true;
-        html += '<span><i class="informe-dot" style="background:' + colorPorTipo(canon) + '"></i>' +
+        var color = colorPorTipo(canon);
+        html += '<span><svg class="informe-dot" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">' +
+          '<circle cx="6" cy="6" r="5" fill="' + color + '" stroke="#111827" stroke-width="1"/></svg>' +
           esc(etiquetaTipoLegible(n.group)) + '</span>';
       });
       html += '</div>';
@@ -3245,11 +3521,13 @@
         } else if (json.response && typeof json.response === 'object') {
           textoRespuesta = json.response.respuesta ?? json.response.introduccion ?? json.response.answer ?? '';
         }
-        const htmlRespuesta = renderRespuestaEstructurada(json.structured, textoRespuesta);
-        panelExp.innerHTML = htmlRespuesta || renderEstadoVacio('§', 'Sin explicación', 'No se generó contenido para esta consulta.');
+        const extraidoExp = extraerMermaidDeTexto(textoRespuesta);
+        const htmlDiagExp = htmlMermaid(extraidoExp.bloques);
+        panelExp.innerHTML = renderRespuestaEstructurada(json.structured, extraidoExp.texto, htmlDiagExp) ||
+          renderEstadoVacio('§', 'Sin explicación', 'No se generó contenido para esta consulta.');
 
-        const arg = String(json.argumentacion || '');
-        panelArg.innerHTML = renderArgumentacion(arg);
+        const extraidoArg = extraerMermaidDeTexto(String(json.argumentacion || ''));
+        panelArg.innerHTML = renderArgumentacion(extraidoArg.texto);
 
         const imp = json.impacted || {};
         const rawNodes = imp.nodes || [];
@@ -3265,6 +3543,7 @@
         panelMarco.innerHTML = renderMarcoNormativo(rawNodes);
         panelObs.innerHTML = renderObservacionesResoluciones(json.structured, rawNodes);
         panelRel.innerHTML = renderRelacionesRelevantes(rawEdges, rawNodes);
+        await pintarMermaid(panelExp);
         consultasRealizadas.push({
           pregunta: q,
           explicacion: panelExp.innerHTML,

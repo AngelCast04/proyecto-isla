@@ -188,6 +188,29 @@
   height: 54px;
 }
 
+.header-logo-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+  max-width: 11.5rem;
+  color: #1a1228;
+  font-family: 'Urbanist', sans-serif;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.header-logo-text-line {
+  display: block;
+}
+
+.header-logo--sipyv {
+  font-size: 0.72rem;
+}
+
 .nav {
   display: flex;
   align-items: center;
@@ -770,6 +793,11 @@
     height: 44px;
   }
 
+  .header-logo--sipyv {
+    font-size: 0.64rem;
+    max-width: 9.5rem;
+  }
+
   .header-logos-rule {
     height: 36px;
   }
@@ -834,6 +862,11 @@
     height: 36px;
   }
 
+  .header-logo--sipyv {
+    font-size: 0.58rem;
+    max-width: 8.2rem;
+  }
+
   .nav {
     display: none;
   }
@@ -868,6 +901,11 @@
 
   .header-logo--ujat {
     height: 30px;
+  }
+
+  .header-logo--sipyv {
+    font-size: 0.52rem;
+    max-width: 7.2rem;
   }
 
   .hero-heading {

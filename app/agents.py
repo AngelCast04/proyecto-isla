@@ -96,8 +96,17 @@ class AnalystAgent:
                 ctx.structured,
                 ctx.nodes_impacted,
             )
-            from app.formatters import format_legal_response
+            from app.formatters import (
+                append_mermaid_to_text,
+                build_mermaid_analisis,
+                format_legal_response,
+            )
             ctx.response_text = format_legal_response(ctx.structured)
+            ctx.response_text = append_mermaid_to_text(
+                ctx.response_text,
+                build_mermaid_analisis(ctx.structured),
+                "analisis",
+            )
         return ctx
 
 

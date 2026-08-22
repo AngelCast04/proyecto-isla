@@ -534,8 +534,21 @@
   margin-top: 36px;
   position: relative;
   display: flex;
+  flex-direction:column;
+  align-items: center;
   justify-content: center;
   width: 100%;
+  gap: 12px;
+}
+
+.hero-center-label{
+  margin:0;
+  color: #ffffff;
+  font-family: 'Urbanist', sans-serif;
+  font-size: 0.95rem;
+  font-weight:600;
+  letter-spacing:0.04em;
+  text-align: center;
 }
 
 .cursor-element {

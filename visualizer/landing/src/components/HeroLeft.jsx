@@ -54,6 +54,7 @@ export default function HeroLeft() {
             <ChevronIcon />
           </a>
         </div>
+        <p className="hero-center-label">IA DH GYISCO</p>
       </div>
     </div>
   );

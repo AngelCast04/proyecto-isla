@@ -541,7 +541,7 @@
   gap: 12px;
 }
 
-.hero-center-label{
+.hero-center-label {
   margin: 0;
   color: #ffffff;
   font-family: 'Urbanist', sans-serif;
@@ -835,6 +835,11 @@
     text-align-last: center;
   }
 
+  .hero-center-label {
+    font-size: 48px;
+    line-height: 1.1;
+  }
+
   .cursor-element {
     margin-left: auto;
     margin-right: auto;
@@ -890,6 +895,11 @@
     line-height: 1.15;
   }
 
+  .hero-center-label {
+    font-size: 36px;
+    line-height: 1.15;
+  }
+
   .orbits-container {
     transform: scale(0.5);
   }
@@ -923,6 +933,10 @@
   }
 
   .hero-heading {
+    font-size: 28px;
+  }
+
+  .hero-center-label {
     font-size: 28px;
   }
 

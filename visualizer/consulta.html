@@ -3479,6 +3479,58 @@
       }
     }
 
+    async function esperar(ms) {
+      return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+
+    function mensajeErrorHttp(res, json) {
+      if (json && json.detail) {
+        return typeof json.detail === 'string'
+          ? json.detail
+          : (json.detail.msg || JSON.stringify(json.detail));
+      }
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        return 'El servidor cortó la consulta (timeout o falta de memoria en Render). Espera unos segundos e inténtalo de nuevo.';
+      }
+      return 'Error HTTP ' + res.status;
+    }
+
+    async function leerJsonRespuesta(res) {
+      const text = await res.text();
+      if (!text || !String(text).trim()) {
+        throw new Error('El servidor cerró la conexión sin respuesta (timeout o reinicio en Render). Espera e inténtalo de nuevo.');
+      }
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error('Respuesta no válida del servidor (HTTP ' + res.status + ').');
+      }
+    }
+
+    async function consultarEnApi(q) {
+      let res = await fetch(`${API}/api/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q })
+      });
+      let json = await leerJsonRespuesta(res);
+      let polls = 0;
+      const maxPolls = 90;
+      while (res.status === 202 && json && json.job_id && polls < maxPolls) {
+        polls += 1;
+        await esperar(2000);
+        res = await fetch(`${API}/api/query/jobs/` + encodeURIComponent(json.job_id));
+        json = await leerJsonRespuesta(res);
+      }
+      if (res.status === 202) {
+        throw new Error('La consulta sigue en curso y superó el tiempo de espera. Inténtalo de nuevo.');
+      }
+      if (!res.ok) {
+        throw new Error(mensajeErrorHttp(res, json));
+      }
+      return json;
+    }
+
     async function consultar() {
       const input = document.getElementById('queryInput');
       const btn = document.getElementById('btnConsultar');
@@ -3507,15 +3559,10 @@
       scrollChat();
 
       try {
-        const res = await fetch(`${API}/api/query`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: q })
-        });
-        const json = await res.json();
+        const json = await consultarEnApi(q);
 
-        if (!res.ok) {
-          throw new Error(typeof json.detail === 'string' ? json.detail : json.detail?.msg || JSON.stringify(json.detail || 'Error'));
+        if (!json || typeof json !== 'object') {
+          throw new Error('Respuesta vacía del servidor.');
         }
 
         let textoRespuesta = '';

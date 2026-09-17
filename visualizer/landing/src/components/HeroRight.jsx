@@ -10,7 +10,7 @@ import avatar7 from '../assets/avatars/7.png';
 import avatar8 from '../assets/avatars/8.png';
 import avatar9 from '../assets/avatars/9.png';
 
-const DEFAULT_STATS = { nodes: 806, edges: 1121 };
+const DEFAULT_STATS = { nodes: 2896, edges: 6502 };
 
 const AVATARS = [
   {
@@ -206,7 +206,7 @@ function OrbitRing({ orbit }) {
 
 export default function HeroRight() {
   return (
-    <div className="hero-right animate-scale-in">
+    <div className="hero-right animate-scale-in" id="tour-orbitas">
       <div className="orbits-container">
         {ORBITS.map((orbit) => (
           <OrbitRing key={orbit.id} orbit={orbit} />

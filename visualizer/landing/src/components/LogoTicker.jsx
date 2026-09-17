@@ -49,6 +49,7 @@ export default function LogoTicker() {
 
   return (
     <section
+      id="tour-ticker"
       className="logo-ticker animate-fade-up-delayed"
       aria-label="Derechos humanos cubiertos en la red semántica"
     >

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title> Derechos Humanos</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <link rel="stylesheet" href="/assets/css/product-tour.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -1396,13 +1397,14 @@
       </a>
       <span> GYISCO: Asistente IA de Derechos Humanos</span>
     </h1>
-    <nav class="vista-tabs" aria-label="Pantallas">
+    <nav class="vista-tabs" id="tour-tabs" aria-label="Pantallas">
       <button type="button" class="vista-tab activo" id="tabChat" onclick="mostrarVista('chat')">Consulta</button>
       <button type="button" class="vista-tab" id="tabGrafo" onclick="mostrarVista('grafo')">Grafo</button>
     </nav>
-    <div class="header-buttons">
-      <button class="btn btn-secondary" onclick="exportarPDF()">Exportar PDF</button>
-      <button class="btn btn-primary" onclick="nuevaConsulta()">Nueva consulta</button>
+    <div class="header-buttons" id="tour-acciones">
+      <button type="button" class="btn btn-secondary" id="btnTour">Tour</button>
+      <button class="btn btn-secondary" id="btnExportarPDF" onclick="exportarPDF()">Exportar PDF</button>
+      <button class="btn btn-primary" id="btnNuevaConsulta" onclick="nuevaConsulta()">Nueva consulta</button>
     </div>
   </header>
 
@@ -1412,7 +1414,7 @@
         <div class="chat-empty" id="chatEmpty">
           <h2>Bienvenido a GYISCO, ¿En qué puedo ayudarte?</h2>
           <p>Puedes escribir una consulta sobre el corpus de derechos humanos. La respuesta incluye explicación, argumentación, marco normativo, observaciones e informes, y relaciones relevantes.</p>
-          <div class="chat-suggestions">
+          <div class="chat-suggestions" id="tour-sugerencias">
             <button type="button" class="chat-chip" onclick="enviarConsulta('¿Qué instrumentos protegen a personas indígenas?')">Instrumentos para pueblos indígenas</button>
             <button type="button" class="chat-chip" onclick="enviarConsulta('¿Cuáles son los mecanismos de la ONU para migrantes?')">Mecanismos ONU para migrantes</button>
             <button type="button" class="chat-chip" onclick="enviarConsulta('Explica el derecho a la no discriminación')">Derecho a la no discriminación</button>
@@ -1423,7 +1425,7 @@
       </div>
     </div>
     <div class="chat-composer-wrap">
-      <form class="chat-composer" id="chatComposer" onsubmit="event.preventDefault(); consultar();">
+      <form class="chat-composer" id="chatComposer" data-tour="composer" onsubmit="event.preventDefault(); consultar();">
         <textarea id="queryInput" rows="1" placeholder="Escribe tu consulta…"
           onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); consultar(); }"></textarea>
         <button type="submit" class="chat-send" id="btnConsultar" title="Enviar" aria-label="Enviar consulta">
@@ -1514,7 +1516,7 @@
   </div>
 
   <div class="grafo-wrap">
-    <div class="grafo-lienzo">
+    <div class="grafo-lienzo" id="tour-lienzo">
       <div class="grafo-bg" aria-hidden="true"></div>
       <div id="mynetwork"></div>
       <aside class="nodo-detalle" id="nodoDetalle" hidden>
@@ -1529,7 +1531,7 @@
         <div class="nodo-detalle-body" id="nodoDetalleBody"></div>
       </aside>
     </div>
-    <div class="grafo-meta">
+    <div class="grafo-meta" id="tour-grafo-meta">
       <span id="grafoInfo">Realiza una consulta o pulsa «Ver red completa».</span>
       <button type="button" class="btn btn-secondary btn-sm" onclick="centrarGrafo()">Centrar</button>
       <button type="button" class="btn btn-secondary btn-sm" onclick="verGrafoCompleto()">Ver red completa</button>
@@ -1540,6 +1542,7 @@
   <article id="informeExport" aria-hidden="true"></article>
 
   <script src="config.js"></script>
+  <script src="/assets/js/product-tour.js"></script>
   <script>
     let network = null;
     let data = { nodes: new vis.DataSet([]), edges: new vis.DataSet([]) };
@@ -3662,6 +3665,14 @@
         setTimeout(function() { input.focus(); }, 350);
       }
     })();
+
+    if (window.GYISCOTour) {
+      window.GYISCOTour.initConsulta();
+    } else {
+      window.addEventListener('load', function () {
+        if (window.GYISCOTour) window.GYISCOTour.initConsulta();
+      });
+    }
   </script>
 </body>
 </html>

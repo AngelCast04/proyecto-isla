@@ -47,7 +47,7 @@ export default function TypewriterHeading({
   const lightPart = displayed.slice(darkText.length);
 
   return (
-    <h1 className="hero-heading">
+    <h1 className="hero-heading" id="tour-heading">
       <span className="hero-heading-dark">{darkPart}</span>
       {lightPart ? <span className="hero-heading-light">{lightPart}</span> : null}
       {!done && showCursor && <span className="typewriter-cursor">|</span>}

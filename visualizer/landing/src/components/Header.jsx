@@ -14,7 +14,7 @@ export default function Header() {
   return (
     <header className="header animate-fade-down">
       <div className="header-left">
-        <a href="/" className="header-logos" title="Inicio" aria-label="Inicio">
+        <a href="/" className="header-logos" id="tour-logos" title="Inicio" aria-label="Inicio">
           <img
             src="/logos/UJAT_logo.png"
             alt="Universidad Juárez Autónoma de Tabasco"
@@ -40,12 +40,17 @@ export default function Header() {
             className="header-logo header-logo--dacyti"
           />
         </a>
-        <nav className="nav" aria-label="Principal">
+        <nav className="nav" id="tour-nav" aria-label="Principal">
           <NavInfoMenu />
         </nav>
       </div>
       <div className="header-right">
-        <PillButton href="/consulta?modo=consulta">Iniciar Consulta</PillButton>
+        <button type="button" className="tour-header-btn" id="tour-launcher">
+          Tour
+        </button>
+        <div id="tour-iniciar">
+          <PillButton href="/consulta?modo=consulta">Iniciar Consulta</PillButton>
+        </div>
       </div>
     </header>
   );

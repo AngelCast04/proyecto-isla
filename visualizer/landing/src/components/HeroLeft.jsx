@@ -47,7 +47,7 @@ export default function HeroLeft() {
         onComplete={() => setTypingDone(true)}
       />
 
-      <div className={`hero-cta ${typingDone ? 'hero-cta--visible' : ''}`}>
+      <div className={`hero-cta ${typingDone ? 'hero-cta--visible' : ''}`} id="tour-explorar">
         <div className="btn-border-wrap">
           <a href="/consulta?modo=explorar" className="pill-btn pill-btn--start">
             Explorar Red Semántica

@@ -13,6 +13,11 @@ from pydantic import BaseModel
 
 from app.formatters import humanizar_relacion
 
+try:
+    import igraph as ig
+except ImportError:
+    ig = None
+
 # Raíz del proyecto (no depender del cwd de uvicorn en Render/Docker)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 VISUALIZER_DIR = _PROJECT_ROOT / "visualizer"
@@ -150,13 +155,11 @@ def _load_grafo_desde_json(json_path: Path) -> dict:
 
 
 def _load_grafo_desde_pklz(graph_path: Path) -> dict:
-    try:
-        import igraph as ig
-    except ImportError as exc:
+    if ig is None:
         raise HTTPException(
             status_code=503,
             detail="igraph no está instalado. Usa el entorno virtual o ejecuta export_grafo.py.",
-        ) from exc
+        )
 
     g = ig.Graph.Read_Picklez(str(graph_path))
     nodes = []
@@ -224,10 +227,61 @@ def _grafo_stats(data: dict) -> dict:
     }
 
 
+_stats_cache: dict = {"key": None, "data": None}
+
+
+def _stats_desde_pklz(graph_path: Path) -> dict:
+    """Cuenta nodos/aristas del pickle sin armar el JSON de vis.js."""
+    if ig is None:
+        raise HTTPException(
+            status_code=503,
+            detail="igraph no está instalado. Usa el entorno virtual o ejecuta export_grafo.py.",
+        )
+
+    g = ig.Graph.Read_Picklez(str(graph_path))
+    groups: dict[str, int] = {}
+    for v in g.vs:
+        tipo = str(v.attributes().get("type") or "Otro")
+        groups[tipo] = groups.get(tipo, 0) + 1
+    return {
+        "nodes": int(g.vcount()),
+        "edges": int(g.ecount()),
+        "groups": groups,
+    }
+
+
+def _load_grafo_stats() -> dict:
+    """Stats desde el pickle local; grafo.json solo si no hay pickle."""
+    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
+    if graph_path.exists():
+        key = ("pklz", str(graph_path), graph_path.stat().st_mtime)
+        if _stats_cache["key"] == key and _stats_cache["data"] is not None:
+            return _stats_cache["data"]
+        data = _stats_desde_pklz(graph_path)
+        _stats_cache["key"] = key
+        _stats_cache["data"] = data
+        return data
+
+    json_path = VISUALIZER_DIR / "grafo.json"
+    if json_path.exists():
+        key = ("json", str(json_path), json_path.stat().st_mtime)
+        if _stats_cache["key"] == key and _stats_cache["data"] is not None:
+            return _stats_cache["data"]
+        data = _grafo_stats(_load_grafo_desde_json(json_path))
+        _stats_cache["key"] = key
+        _stats_cache["data"] = data
+        return data
+
+    raise HTTPException(
+        status_code=404,
+        detail="Grafo no encontrado. Ejecuta run_quickstart.py o export_grafo.py primero.",
+    )
+
+
 @app.get("/api/grafo/stats")
 def get_grafo_stats():
-    """Estadísticas ligeras del grafo para el landing."""
-    return _grafo_stats(_load_grafo())
+    """Estadísticas ligeras del grafo para el landing (pickle local)."""
+    return _load_grafo_stats()
 
 
 @app.get("/api/grafo")

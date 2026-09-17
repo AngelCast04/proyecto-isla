@@ -138,6 +138,29 @@
   gap: 28px;
 }
 
+.tour-header-btn {
+  background: transparent;
+  border: none;
+  color: #f4f4f5;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 4px;
+  opacity: 0.82;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.tour-header-btn:hover {
+  opacity: 1;
+  color: #e9d5ff;
+}
+
+#tour-iniciar {
+  display: inline-flex;
+}
+
 .header-logos {
   display: flex;
   align-items: center;

@@ -6,7 +6,7 @@ authors = ["Luca Pinchetti <luca@circlemind.co>", "Antonio Vespoli <antonio@circ
 packages = [{include = "fast_graphrag" }]
 readme = "README.md"
 
-# PEP 621: requerido por Vercel (`uv lock`). Coexiste con Poetry ([tool.poetry]) usado en Render/local.
+# PEP 621. Vercel es front estático (vercel.json); este paquete lo instala Render/local.
 [project]
 name = "fast-graphrag"
 version = "0.0.5"
@@ -33,9 +33,6 @@ dependencies = [
   "uvicorn[standard]>=0.30.0",
   "pymupdf>=1.24.0",
 ]
-
-[tool.vercel]
-entrypoint = "app.main:app"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"

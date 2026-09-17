@@ -1,8 +1,12 @@
-# Reduce el tamaño del bundle en Vercel (Render no usa este archivo).
+# Vercel sirve solo el front (visualizer/). Render no usa este archivo.
+app/
+fast_graphrag/
 libros/
 benchmarks/
 tests/
 book_example/
+examples/
+docs/
 .venv/
 venv/
 **/__pycache__/
@@ -13,4 +17,9 @@ venv/
 visualizer/landing/node_modules/
 grafo_libros/
 *.pklz
+*.pdf
 .env
+requirements.txt
+poetry.lock
+pyproject.toml
+render.yaml

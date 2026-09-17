@@ -1,9 +1,45 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "app/main.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{libros/**,benchmarks/**,tests/**,book_example/**,visualizer/landing/node_modules/**,visualizer/landing/src/**,**/*.pdf,.git/**}"
+  "framework": null,
+  "installCommand": "echo skip",
+  "buildCommand": "echo skip",
+  "outputDirectory": "visualizer",
+  "rewrites": [
+    {
+      "source": "/config.js",
+      "destination": "/config.vercel.js"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://project-isla.onrender.com/api/:path*"
+    },
+    {
+      "source": "/",
+      "destination": "/dist/index.html"
+    },
+    {
+      "source": "/consulta",
+      "destination": "/consulta.html"
+    },
+    {
+      "source": "/l-assets/:path*",
+      "destination": "/dist/l-assets/:path*"
+    },
+    {
+      "source": "/logos/:path*",
+      "destination": "/dist/logos/:path*"
+    },
+    {
+      "source": "/avatars/:path*",
+      "destination": "/dist/avatars/:path*"
     }
-  }
+  ],
+  "headers": [
+    {
+      "source": "/config.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ]
 }

@@ -173,24 +173,6 @@ Tras desplegar:
 - prueba `GET /api/grafo` (debe devolver nodos/aristas una vez generado el grafo).
 - prueba `POST /api/query` con una consulta.
 
----
-
-## Despliegue en Vercel (coexiste con Render)
-
-Vercel sirve la misma app FastAPI (`app.main:app`) como Function. **No reemplaza** a Render: `render.yaml` sigue siendo el camino recomendado para ingesta + grafo completo.
-
-1. Conecta el repo en Vercel (Framework Preset: FastAPI / Other).
-2. Define variables de entorno: `OPENAI_API_KEY`, y opcionalmente `CORS_ORIGINS`, `CONCURRENT_TASK_LIMIT`.
-3. Despliega. El build usa `pyproject.toml` (`[project]`) + `uv`; la entrada está en `[tool.vercel] entrypoint = "app.main:app"`.
-
-Notas:
-
-- `vercel.json` fija `maxDuration` a 60s (consultas GraphRAG pueden ser largas).
-- `.vercelignore` excluye `libros/`, tests y `grafo_libros/` para no inflar el bundle.
-- Sin `grafo_libros/` en el deploy, `/api/grafo` puede usar el respaldo `visualizer/grafo.json`; las **consultas LLM** requieren el grafo persistido (mejor en Render con disco o build de ingesta).
-
----
-
 ## Licencia
 
 Este proyecto incluye código bajo **MIT License** (ver [LICENSE](LICENSE)), en línea con Fast GraphRAG.

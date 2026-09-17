@@ -4,14 +4,12 @@ import asyncio
 import json
 import logging
 import os
-import time
-import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -71,22 +69,9 @@ CORS_ORIGINS = _get_cors_origins()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Abre el puerto al instante; calienta GraphRAG en segundo plano tras el health check."""
-
-    async def _warmup():
-        await asyncio.sleep(3)
-        if not os.getenv("OPENAI_API_KEY"):
-            logger.warning("OPENAI_API_KEY ausente; se omite el warmup de GraphRAG.")
-            return
-        try:
-            await ensure_grag()
-        except Exception:
-            logger.exception("Warmup de GraphRAG falló; las consultas reintentarán al vuelo.")
-
-    warmup_task = asyncio.create_task(_warmup())
-    logger.info("Servidor listo; GraphRAG se calienta en segundo plano.")
+    """No bloquear el bind del puerto: GraphRAG se carga en la primera consulta."""
+    logger.info("Servidor listo; GraphRAG se inicializa de forma lazy.")
     yield
-    warmup_task.cancel()
 
 
 app = FastAPI(title="GraphRAG Consultas", lifespan=lifespan)
@@ -115,13 +100,10 @@ app.add_middleware(
     allow_credentials=False,
 )
 
-# GraphRAG se carga tras el health check (warmup) o en la primera consulta.
+# GraphRAG se carga en el event loop de uvicorn en la primera consulta (no en startup).
 _grag = None
 _orchestrator = None
 _init_lock: asyncio.Lock | None = None
-_jobs: dict[str, dict] = {}
-_JOB_TTL_S = 600
-_MAX_JOBS = 40
 
 
 def _get_init_lock() -> asyncio.Lock:
@@ -168,7 +150,7 @@ def _build_grag():
 
 
 async def ensure_grag():
-    """Importa GraphRAG fuera del event loop para no bloquear /health ni el puerto."""
+    """Crea GraphRAG/semáforos en el loop de uvicorn, sin bloquear el health check."""
     global _grag
     if _grag is not None:
         return _grag
@@ -177,70 +159,11 @@ async def ensure_grag():
             return _grag
         if not os.getenv("OPENAI_API_KEY"):
             raise RuntimeError("OPENAI_API_KEY no configurada")
-        logger.info("Inicializando GraphRAG (hilo de fondo)...")
-        _grag = await asyncio.to_thread(_build_grag)
+        logger.info("Inicializando GraphRAG (lazy)...")
+        _grag = _build_grag()
         get_orchestrator()
         logger.info("GraphRAG listo.")
         return _grag
-
-
-def _cleanup_jobs(now: float | None = None) -> None:
-    ts = time.time() if now is None else now
-    expired = [job_id for job_id, job in _jobs.items() if ts - job.get("created", 0) > _JOB_TTL_S]
-    for job_id in expired:
-        _jobs.pop(job_id, None)
-    if len(_jobs) <= _MAX_JOBS:
-        return
-    oldest = sorted(_jobs.items(), key=lambda item: item[1].get("created", 0))
-    for job_id, _job in oldest[: len(_jobs) - _MAX_JOBS]:
-        _jobs.pop(job_id, None)
-
-
-def _serialize_ctx(ctx) -> dict:
-    return {
-        "response": ctx.response_text,
-        "structured": ctx.structured,
-        "argumentacion": ctx.argumentacion,
-        "intent": ctx.intent,
-        "warnings": ctx.input_warnings + ctx.output_warnings,
-        "impacted": {
-            "nodes": ctx.nodes_impacted,
-            "edges": ctx.edges_impacted,
-        },
-    }
-
-
-def _http_error_from_exc(exc: Exception) -> tuple[int, str]:
-    msg = str(exc)
-    if "api_key" in msg.lower() or "OPENAI" in msg.upper():
-        return 503, "Configura OPENAI_API_KEY antes de consultar."
-    return 500, msg
-
-
-async def _run_query_job(job_id: str, query: str) -> None:
-    job = _jobs.get(job_id)
-    if job is None:
-        return
-    try:
-        grag = await ensure_grag()
-        ctx = await get_orchestrator().aexecute(
-            grag,
-            query,
-            _generar_argumentacion,
-        )
-        if ctx.blocked:
-            job["status"] = "error"
-            job["http_status"] = 400
-            job["detail"] = ctx.block_reason or "Consulta no permitida."
-            return
-        job["status"] = "done"
-        job["result"] = _serialize_ctx(ctx)
-    except Exception as exc:
-        logger.exception("Fallo en job de consulta %s", job_id)
-        code, detail = _http_error_from_exc(exc)
-        job["status"] = "error"
-        job["http_status"] = code
-        job["detail"] = detail
 
 
 class QueryRequest(BaseModel):
@@ -384,7 +307,7 @@ def health():
     """Health check ligero para Render: no carga GraphRAG ni llama a OpenAI."""
     return {
         "status": "ok",
-        "graphrag": "ready" if _grag is not None else "warming",
+        "graphrag": "ready" if _grag is not None else "lazy",
     }
 
 
@@ -402,45 +325,36 @@ def get_grafo_completo():
 
 @app.post("/api/query")
 async def consultar(request: QueryRequest):
-    """Encola la consulta para no chocar con el timeout HTTP de Render (~30s)."""
-    _cleanup_jobs()
-    job_id = uuid.uuid4().hex
-    _jobs[job_id] = {"status": "pending", "created": time.time()}
-    asyncio.create_task(_run_query_job(job_id, request.query))
-
-    wait_s = float(os.getenv("QUERY_SYNC_WAIT_S", "22"))
-    deadline = time.monotonic() + max(1.0, wait_s)
-    while time.monotonic() < deadline:
-        job = _jobs[job_id]
-        if job["status"] == "done":
-            return job["result"]
-        if job["status"] == "error":
+    """Ejecuta una consulta vía orquestador multi-agente con guardrails."""
+    try:
+        grag = await ensure_grag()
+        ctx = await get_orchestrator().aexecute(
+            grag,
+            request.query,
+            _generar_argumentacion,
+        )
+    except Exception as e:
+        if "api_key" in str(e).lower() or "OPENAI" in str(e).upper():
             raise HTTPException(
-                status_code=int(job.get("http_status") or 500),
-                detail=job.get("detail") or "Error en la consulta.",
+                status_code=503,
+                detail="Configura OPENAI_API_KEY antes de consultar.",
             )
-        await asyncio.sleep(0.25)
+        raise HTTPException(status_code=500, detail=str(e))
 
-    return JSONResponse({"job_id": job_id, "status": "pending"}, status_code=202)
+    if ctx.blocked:
+        raise HTTPException(status_code=400, detail=ctx.block_reason or "Consulta no permitida.")
 
-
-@app.get("/api/query/jobs/{job_id}")
-async def get_query_job(job_id: str):
-    """Estado de una consulta en curso (polling desde el visualizador)."""
-    job = _jobs.get(job_id)
-    if job is None:
-        raise HTTPException(
-            status_code=404,
-            detail="La consulta expiró o el servidor se reinició. Vuelve a preguntar.",
-        )
-    if job["status"] == "pending":
-        return JSONResponse({"job_id": job_id, "status": "pending"}, status_code=202)
-    if job["status"] == "error":
-        raise HTTPException(
-            status_code=int(job.get("http_status") or 500),
-            detail=job.get("detail") or "Error en la consulta.",
-        )
-    return job["result"]
+    return {
+        "response": ctx.response_text,
+        "structured": ctx.structured,
+        "argumentacion": ctx.argumentacion,
+        "intent": ctx.intent,
+        "warnings": ctx.input_warnings + ctx.output_warnings,
+        "impacted": {
+            "nodes": ctx.nodes_impacted,
+            "edges": ctx.edges_impacted,
+        },
+    }
 
 
 def _generar_argumentacion(nodes: list, edges: list, structured: dict | None = None) -> str:

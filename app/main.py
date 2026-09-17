@@ -1,10 +1,7 @@
 """API FastAPI para consultas GraphRAG con visualización de grafo impactado."""
 
-import asyncio
 import json
-import logging
 import os
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -15,8 +12,6 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.formatters import humanizar_relacion
-
-logger = logging.getLogger("app.main")
 
 try:
     import igraph as ig
@@ -66,15 +61,7 @@ def _get_cors_origins() -> list[str]:
 
 CORS_ORIGINS = _get_cors_origins()
 
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    """No bloquear el bind del puerto: GraphRAG se carga en la primera consulta."""
-    logger.info("Servidor listo; GraphRAG se inicializa de forma lazy.")
-    yield
-
-
-app = FastAPI(title="GraphRAG Consultas", lifespan=lifespan)
+app = FastAPI(title="GraphRAG Consultas")
 
 
 class NoCacheHTMLMiddleware(BaseHTTPMiddleware):
@@ -100,17 +87,9 @@ app.add_middleware(
     allow_credentials=False,
 )
 
-# GraphRAG se carga en el event loop de uvicorn en la primera consulta (no en startup).
+# GraphRAG se carga al iniciar (lazy para evitar errores si no hay API key)
 _grag = None
 _orchestrator = None
-_init_lock: asyncio.Lock | None = None
-
-
-def _get_init_lock() -> asyncio.Lock:
-    global _init_lock
-    if _init_lock is None:
-        _init_lock = asyncio.Lock()
-    return _init_lock
 
 
 def get_orchestrator():
@@ -121,49 +100,46 @@ def get_orchestrator():
     return _orchestrator
 
 
-def _build_grag():
-    from fast_graphrag import GraphRAG
-    from fast_graphrag._llm import OpenAIEmbeddingService, OpenAILLMService
-
-    concurrent = int(os.getenv("CONCURRENT_TASK_LIMIT", "2"))
-    return GraphRAG(
-        working_dir=WORKING_DIR,
-        domain=DOMAIN,
-        example_queries="\n".join(EXAMPLE_QUERIES),
-        entity_types=ENTITY_TYPES,
-        config=GraphRAG.Config(
-            llm_service=OpenAILLMService(
-                model="gpt-4o-mini",
-                max_requests_concurrent=concurrent,
-                rate_limit_per_minute=True,
-                max_requests_per_minute=30,
-                rate_limit_concurrency=True,
-            ),
-            embedding_service=OpenAIEmbeddingService(
-                max_requests_concurrent=min(4, concurrent),
-                rate_limit_per_minute=True,
-                max_requests_per_minute=60,
-                rate_limit_concurrency=True,
-            ),
-        ),
-    )
-
-
-async def ensure_grag():
-    """Crea GraphRAG/semáforos en el loop de uvicorn, sin bloquear el health check."""
+def get_grag():
     global _grag
-    if _grag is not None:
-        return _grag
-    async with _get_init_lock():
-        if _grag is not None:
-            return _grag
-        if not os.getenv("OPENAI_API_KEY"):
-            raise RuntimeError("OPENAI_API_KEY no configurada")
-        logger.info("Inicializando GraphRAG (lazy)...")
-        _grag = _build_grag()
+    if _grag is None:
+        from fast_graphrag import GraphRAG
+        from fast_graphrag._llm import OpenAIEmbeddingService, OpenAILLMService
+        _grag = GraphRAG(
+            working_dir=WORKING_DIR,
+            domain=DOMAIN,
+            example_queries="\n".join(EXAMPLE_QUERIES),
+            entity_types=ENTITY_TYPES,
+            config=GraphRAG.Config(
+                llm_service=OpenAILLMService(
+                    model="gpt-4o-mini",
+                    max_requests_concurrent=int(os.getenv("CONCURRENT_TASK_LIMIT", "4")),
+                    rate_limit_per_minute=True,
+                    max_requests_per_minute=30,
+                    rate_limit_concurrency=True,
+                ),
+                embedding_service=OpenAIEmbeddingService(
+                    max_requests_concurrent=4,
+                    rate_limit_per_minute=True,
+                    max_requests_per_minute=60,
+                    rate_limit_concurrency=True,
+                ),
+            ),
+        )
+    return _grag
+
+
+@app.on_event("startup")
+async def warmup_grag():
+    """Crea GraphRAG/Semaphores en el event loop de uvicorn (evita bound to a different event loop)."""
+    if not os.getenv("OPENAI_API_KEY"):
+        return
+    try:
+        get_grag()
         get_orchestrator()
-        logger.info("GraphRAG listo.")
-        return _grag
+    except Exception:
+        # Sin grafo o sin key: el endpoint /api/query reportará el error al consultar
+        pass
 
 
 class QueryRequest(BaseModel):
@@ -302,15 +278,6 @@ def _load_grafo_stats() -> dict:
     )
 
 
-@app.get("/health")
-def health():
-    """Health check ligero para Render: no carga GraphRAG ni llama a OpenAI."""
-    return {
-        "status": "ok",
-        "graphrag": "ready" if _grag is not None else "lazy",
-    }
-
-
 @app.get("/api/grafo/stats")
 def get_grafo_stats():
     """Estadísticas ligeras del grafo para el landing (pickle local)."""
@@ -327,7 +294,7 @@ def get_grafo_completo():
 async def consultar(request: QueryRequest):
     """Ejecuta una consulta vía orquestador multi-agente con guardrails."""
     try:
-        grag = await ensure_grag()
+        grag = get_grag()
         ctx = await get_orchestrator().aexecute(
             grag,
             request.query,

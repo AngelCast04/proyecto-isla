@@ -18,10 +18,23 @@ from app.formatters import humanizar_relacion
 
 logger = logging.getLogger("app.main")
 
-try:
-    import igraph as ig
-except ImportError:
-    ig = None
+_igraph_mod = None
+_igraph_loaded = False
+
+
+def _get_igraph():
+    """Carga igraph solo al leer el pickle; no en el import (SIGILL/hang en Render)."""
+    global _igraph_mod, _igraph_loaded
+    if _igraph_loaded:
+        return _igraph_mod
+    _igraph_loaded = True
+    try:
+        import igraph as igraph_mod
+    except ImportError:
+        _igraph_mod = None
+        return None
+    _igraph_mod = igraph_mod
+    return _igraph_mod
 
 # Raíz del proyecto (no depender del cwd de uvicorn en Render/Docker)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -179,6 +192,7 @@ def _load_grafo_desde_json(json_path: Path) -> dict:
 
 
 def _load_grafo_desde_pklz(graph_path: Path) -> dict:
+    ig = _get_igraph()
     if ig is None:
         raise HTTPException(
             status_code=503,
@@ -222,14 +236,14 @@ def _humanizar_relaciones_grafo(data: dict) -> dict:
 
 
 def _load_grafo() -> dict:
-    """Fuente canónica: graph_igraph_data.pklz (como en Render). grafo.json solo como respaldo."""
-    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
-    if graph_path.exists():
-        return _humanizar_relaciones_grafo(_load_grafo_desde_pklz(graph_path))
-
+    """Visualización: grafo.json (sin igraph). El pickle solo si no hay JSON."""
     json_path = VISUALIZER_DIR / "grafo.json"
     if json_path.exists():
         return _humanizar_relaciones_grafo(_load_grafo_desde_json(json_path))
+
+    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
+    if graph_path.exists():
+        return _humanizar_relaciones_grafo(_load_grafo_desde_pklz(graph_path))
 
     raise HTTPException(
         status_code=404,
@@ -256,6 +270,7 @@ _stats_cache: dict = {"key": None, "data": None}
 
 def _stats_desde_pklz(graph_path: Path) -> dict:
     """Cuenta nodos/aristas del pickle sin armar el JSON de vis.js."""
+    ig = _get_igraph()
     if ig is None:
         raise HTTPException(
             status_code=503,
@@ -275,13 +290,16 @@ def _stats_desde_pklz(graph_path: Path) -> dict:
 
 
 def _load_grafo_stats() -> dict:
-    """Stats desde el pickle local; grafo.json solo si no hay pickle."""
-    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
-    if graph_path.exists():
-        key = ("pklz", str(graph_path), graph_path.stat().st_mtime)
+    """Stats desde JSON estático; pickle solo si no hay JSON (evita igraph en el landing)."""
+    stats_path = VISUALIZER_DIR / "grafo-stats.json"
+    if stats_path.exists():
+        key = ("stats-json", str(stats_path), stats_path.stat().st_mtime)
         if _stats_cache["key"] == key and _stats_cache["data"] is not None:
             return _stats_cache["data"]
-        data = _stats_desde_pklz(graph_path)
+        with stats_path.open(encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict) or "nodes" not in data:
+            raise HTTPException(status_code=500, detail="grafo-stats.json inválido.")
         _stats_cache["key"] = key
         _stats_cache["data"] = data
         return data
@@ -292,6 +310,16 @@ def _load_grafo_stats() -> dict:
         if _stats_cache["key"] == key and _stats_cache["data"] is not None:
             return _stats_cache["data"]
         data = _grafo_stats(_load_grafo_desde_json(json_path))
+        _stats_cache["key"] = key
+        _stats_cache["data"] = data
+        return data
+
+    graph_path = Path(WORKING_DIR) / "graph_igraph_data.pklz"
+    if graph_path.exists():
+        key = ("pklz", str(graph_path), graph_path.stat().st_mtime)
+        if _stats_cache["key"] == key and _stats_cache["data"] is not None:
+            return _stats_cache["data"]
+        data = _stats_desde_pklz(graph_path)
         _stats_cache["key"] = key
         _stats_cache["data"] = data
         return data

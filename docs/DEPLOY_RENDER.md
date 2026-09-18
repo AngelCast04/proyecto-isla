@@ -50,9 +50,9 @@ Opciones:
      `GRAPH_WORKING_DIR=/var/data/grafo_libros`  
    - La primera vez la carpeta estará vacía: debes **poblar el grafo** (subir un zip con el contenido de `grafo_libros` y extraerlo vía shell de Render, o ejecutar un job/script que llame a `run_quickstart` con tus PDFs y API key).
 
-2. **Incluir `grafo_libros` en el repositorio**  
-   - Solo si el tamaño es aceptable para Git y para el build de Render.  
-   - Quita `grafo_libros/` de `.gitignore` solo si decides versionarlo (valorar privacidad y tamaño).
+2. **Incluir `grafo_libros` en el repositorio (flujo actual)**  
+   - El blueprint **no** corre `run_quickstart.py` en el build.  
+   - Actualiza el grafo en local y versiona `grafo_libros/` (~21 MB).
 
 3. **Build con datos**  
    - Un script de build que descargue artefactos desde almacenamiento externo (S3, etc.) antes de arrancar — requiere configuración adicional.

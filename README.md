@@ -104,7 +104,7 @@ python run_visualizer.py
 ├── app/main.py              # API FastAPI
 ├── visualizer/consulta.html # Interfaz principal
 ├── libros/                  # PDFs de entrada
-├── grafo_libros/            # Grafo y datos persistidos (no versionar secretos)
+├── grafo_libros/            # Grafo persistido (versionado para Render)
 ├── run_consulta.py          # Servidor web
 ├── run_quickstart.py        # Ingesta desde PDFs
 ├── export_grafo.py
@@ -153,17 +153,9 @@ Para plan gratuito, el backend guarda el grafo en (ruta relativa a la raíz del 
 
 - `GRAPH_WORKING_DIR=grafo_libros` (o `./grafo_libros`; se resuelve igual)
 
-En free tier ese almacenamiento es efimero (puede perderse en reinicios/redeploy), por lo que puede ser necesario volver a desplegar para regenerar el grafo.
+El grafo de consultas (`grafo_libros/`) va **versionado** en el repo. El build de Render **no** ejecuta `run_quickstart.py`.
 
-### Ingesta en plan gratuito (sin Shell)
-
-En `plan: free` Render no ofrece Shell. Por eso `render.yaml` ejecuta `python run_quickstart.py` al final del **buildCommand**.
-
-- Debes tener **PDFs** en la carpeta `libros/` versionada en el repo (o el build no tendra texto que indexar).
-- `OPENAI_API_KEY` debe estar definida en el servicio: en Render suele estar disponible tambien durante el **build** (necesaria para la ingesta).
-- El primer build puede tardar bastante (llamadas a OpenAI). Cada redeploy vuelve a ejecutar la ingesta salvo que cambies el flujo (plan Starter con Shell, o disco persistente).
-
-Si pasas a un plan con Shell, puedes quitar `run_quickstart.py` del `buildCommand` y ejecutar la ingesta manualmente cuando quieras.
+Para actualizar el conocimiento: en local `python run_quickstart.py` (o `--reingestar`) y sube los cambios de `grafo_libros/`. `OPENAI_API_KEY` sigue haciendo falta en Render para `POST /api/query`.
 
 ### Verificacion rapida
 

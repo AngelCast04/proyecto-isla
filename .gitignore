@@ -125,8 +125,8 @@ cython_debug/
 book_example/
 book.txt
 
-# Datos generados (se pueden regenerar con run_quickstart.py)
-grafo_libros/
+# grafo_libros/ se versiona para Render (el build ya no reingesta).
+# Regenerar en local: python run_quickstart.py --reingestar
 
 # Frontend
 node_modules/

@@ -94,7 +94,7 @@ ls /Volumes/
 
 ### "No se encontró el grafo"
 - Ejecuta primero `run_quickstart.py` para procesar los PDFs y crear el grafo en `grafo_libros/`.
-- La carpeta `grafo_libros/` está en `.gitignore`; si clonas el repo en otro equipo, debes volver a procesar los PDFs.
+- La carpeta `grafo_libros/` va en el repo para Render. Si está vacía o desactualizada, ejecuta `run_quickstart.py`.
 
 ### La explicación no aparece
 - Reinicia el servidor (`Ctrl+C` y luego `python run_consulta.py` de nuevo).

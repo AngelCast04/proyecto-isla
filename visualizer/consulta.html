@@ -1558,16 +1558,9 @@
     function enVercel() {
       return /\.vercel\.app$/i.test(window.location.hostname);
     }
-    function resolverApiBase() {
-      var raw = (typeof window.__API_BASE__ === 'string'
-        ? String(window.__API_BASE__).replace(/\/$/, '')
-        : '');
-      if (!raw && enVercel()) {
-        return 'https://project-isla.onrender.com';
-      }
-      return raw;
-    }
-    const API = resolverApiBase();
+    const API = (typeof window.__API_BASE__ === 'string'
+      ? String(window.__API_BASE__).replace(/\/$/, '')
+      : '');
     const MERMAID_SANDBOX_URL = '/mermaid-sandbox.html';
     const MERMAID_MAX_CHARS = 12000;
     const MERMAID_MAX_LINES = 80;

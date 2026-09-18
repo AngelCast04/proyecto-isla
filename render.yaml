@@ -2,6 +2,7 @@
 # Un solo Web Service (Python/FastAPI): sirve la UI en / y el API en /api/* (carpeta visualizer/ incluida en el repo).
 #
 # El grafo vive en grafo_libros/ (versionado). No reingestar en cada build.
+# hnswlib se recompila sin -march=native: el builder de Render suele tener AVX2 y el runtime no (SIGILL 132).
 # Para actualizar el grafo: python run_quickstart.py en local y commitea grafo_libros/.
 # OPENAI_API_KEY sigue siendo necesaria en runtime para /api/query.
 
@@ -11,9 +12,9 @@ services:
     runtime: python
     plan: free
     region: oregon
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip setuptools wheel && HNSWLIB_NO_NATIVE=1 pip install -r requirements.txt && HNSWLIB_NO_NATIVE=1 pip install --force-reinstall --no-cache-dir --no-binary hnswlib hnswlib
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.8"
@@ -24,5 +25,9 @@ services:
       - key: CORS_ORIGINS
         sync: false
       - key: CONCURRENT_TASK_LIMIT
-        value: "4"
+        value: "2"
+      - key: HNSWLIB_NO_NATIVE
+        value: "1"
+      - key: OMP_NUM_THREADS
+        value: "1"
 

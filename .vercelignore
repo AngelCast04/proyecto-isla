@@ -16,6 +16,7 @@ venv/
 .ruff_cache/
 visualizer/landing/node_modules/
 grafo_libros/
+visualizer/config.js
 *.pklz
 *.pdf
 .env

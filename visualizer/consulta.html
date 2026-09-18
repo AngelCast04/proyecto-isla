@@ -1541,7 +1541,7 @@
 
   <article id="informeExport" aria-hidden="true"></article>
 
-  <script src="config.js"></script>
+  <script src="/config.js"></script>
   <script src="/assets/js/product-tour.js"></script>
   <script>
     let network = null;
@@ -1555,9 +1555,19 @@
     let layoutToken = 0;
     let floatResumeTimer = null;
     let floatEnabled = false;
-    const API = (typeof window.__API_BASE__ === 'string'
-      ? String(window.__API_BASE__).replace(/\/$/, '')
-      : '');
+    function enVercel() {
+      return /\.vercel\.app$/i.test(window.location.hostname);
+    }
+    function resolverApiBase() {
+      var raw = (typeof window.__API_BASE__ === 'string'
+        ? String(window.__API_BASE__).replace(/\/$/, '')
+        : '');
+      if (!raw && enVercel()) {
+        return 'https://project-isla.onrender.com';
+      }
+      return raw;
+    }
+    const API = resolverApiBase();
     const MERMAID_SANDBOX_URL = '/mermaid-sandbox.html';
     const MERMAID_MAX_CHARS = 12000;
     const MERMAID_MAX_LINES = 80;
@@ -3479,6 +3489,22 @@
       }
     }
 
+    async function leerJsonRespuesta(res) {
+      const text = await res.text();
+      if (!text || !String(text).trim()) {
+        throw new Error('El servidor no devolvió datos. El API de Render puede estar caído o reiniciando.');
+      }
+      var trimmed = String(text).trim();
+      if (trimmed.charAt(0) === '<') {
+        throw new Error('El API de Render no está disponible. Abre la pestaña Grafo para ver la red estática.');
+      }
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error('Respuesta no válida del servidor (HTTP ' + res.status + ').');
+      }
+    }
+
     async function consultar() {
       const input = document.getElementById('queryInput');
       const btn = document.getElementById('btnConsultar');
@@ -3512,7 +3538,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: q })
         });
-        const json = await res.json();
+        const json = await leerJsonRespuesta(res);
 
         if (!res.ok) {
           throw new Error(typeof json.detail === 'string' ? json.detail : json.detail?.msg || JSON.stringify(json.detail || 'Error'));
@@ -3583,12 +3609,31 @@
       cerrarDetalleNodo();
       try {
         info.textContent = 'Cargando red completa...';
-        const res = await fetch(`${API}/api/grafo`);
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || ('HTTP ' + res.status));
+        var urls = [];
+        if (enVercel()) urls.push('/grafo.json');
+        if (API) urls.push(API + '/api/grafo');
+        urls.push('/api/grafo');
+        var raw = null;
+        var lastErr = null;
+        for (var i = 0; i < urls.length; i++) {
+          try {
+            const res = await fetch(urls[i]);
+            const payload = await leerJsonRespuesta(res);
+            if (!res.ok) {
+              lastErr = new Error(payload.detail || ('HTTP ' + res.status));
+              continue;
+            }
+            if (payload && payload.nodes) {
+              raw = payload;
+              break;
+            }
+          } catch (errFetch) {
+            lastErr = errFetch;
+          }
         }
-        const raw = await res.json();
+        if (!raw) {
+          throw lastErr || new Error('No se pudo cargar el grafo.');
+        }
         filtroActivo = 'todos';
         document.querySelectorAll('.leyenda-bar .item.filtro').forEach(el => el.classList.remove('activo'));
         document.querySelector('.leyenda-bar .item.filtro[data-tipo="todos"]')?.classList.add('activo');

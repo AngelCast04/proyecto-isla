@@ -10,6 +10,14 @@
       "destination": "/config.vercel.js"
     },
     {
+      "source": "/api/grafo/stats",
+      "destination": "/grafo-stats.json"
+    },
+    {
+      "source": "/api/grafo",
+      "destination": "/grafo.json"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://project-isla.onrender.com/api/:path*"
     },
